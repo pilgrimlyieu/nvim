@@ -1,5 +1,4 @@
 vim.opt_local.spell = true
-vim.opt_local.spelllang = "en_us,cjk"
 
 vim.g.vimtex_syntax_conceal = {
   accents = 1,

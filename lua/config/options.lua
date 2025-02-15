@@ -9,6 +9,7 @@ vim.g.snacks_animate = false
 
 local opt = vim.opt
 
+opt.spelllang = "en_us,cjk"
 opt.wrap = true
 opt.shiftwidth = 4
 opt.tabstop = 4
