@@ -25,6 +25,8 @@ return {
           },
         },
       }
+
+      vim.o.guifont = "JetBrainsMono_NFM:h14"
     end,
   },
 }
