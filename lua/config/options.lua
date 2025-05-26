@@ -13,6 +13,8 @@ opt.spelllang = "en_us,cjk"
 opt.wrap = true
 opt.shiftwidth = 4
 opt.tabstop = 4
+opt.list = true
+opt.listchars = { tab = ">!", trail = "·", nbsp = "␣" }
 
 if vim.fn.has("win32") == 1 then
   opt.shell = vim.fn.executable("pwsh") == 1 and "pwsh" or "powershell"
