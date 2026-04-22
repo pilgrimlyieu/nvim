@@ -12,6 +12,12 @@ return {
         table.insert(opts.ensure_installed, "tinymist")
       end
 
+      opts.npm = opts.npm or {}
+      opts.npm.install_args = opts.npm.install_args or {}
+      if not vim.tbl_contains(opts.npm.install_args, "--min-release-age=0") then
+        table.insert(opts.npm.install_args, "--min-release-age=0")
+      end
+
       return opts
     end,
   },
@@ -32,6 +38,13 @@ return {
           semanticTokens = "disable",
         },
       })
+
+      -- The system python3 lacks ensurepip, so Mason cannot create the PyPI
+      -- venv it needs to install ruff. Use the existing global ruff binary.
+      opts.servers.ruff = vim.tbl_deep_extend("force", opts.servers.ruff or {}, {
+        mason = false,
+      })
+
       return opts
     end,
   },
