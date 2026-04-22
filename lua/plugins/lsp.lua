@@ -8,6 +8,9 @@ return {
       opts.ensure_installed = vim.tbl_filter(function(name)
         return not vim.tbl_contains(disabled_markdown_tools, name)
       end, opts.ensure_installed)
+      if not vim.tbl_contains(opts.ensure_installed, "tinymist") then
+        table.insert(opts.ensure_installed, "tinymist")
+      end
 
       return opts
     end,
@@ -22,6 +25,13 @@ return {
       -- this is explicitly re-enabled later.
       opts.servers.marksman = { enabled = false }
 
+      opts.servers.tinymist = vim.tbl_deep_extend("force", opts.servers.tinymist or {}, {
+        settings = {
+          exportPdf = "never",
+          formatterMode = "typstyle",
+          semanticTokens = "disable",
+        },
+      })
       return opts
     end,
   },
