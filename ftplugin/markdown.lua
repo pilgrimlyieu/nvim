@@ -1,10 +1,23 @@
 vim.opt_local.spell = true
 
+-- Keep Markdown prose buffers quiet.  LazyVim's Markdown extra enables a few
+-- automatic tools by default, but notes/math drafts should not lint or format
+-- themselves on every edit/save.
+vim.b.autoformat = false
+
+if vim.diagnostic.is_enabled then
+  vim.diagnostic.enable(false, { bufnr = 0 })
+else
+  ---@diagnostic disable-next-line: deprecated
+  vim.diagnostic.disable(0)
+end
+
 vim.g.vimtex_syntax_conceal = {
   accents = 1,
   ligatures = 0,
   cites = 1,
   fancy = 1,
+  texTabularChar = 1,
   spacing = 1,
   greek = 1,
   math_bounds = 0,

@@ -2,6 +2,9 @@ return {
   {
     "lervag/vimtex",
     ft = { "markdown", "tex" },
+    init = function()
+      require("config.markdown_vimtex").setup()
+    end,
     config = function()
       vim.g.tex_conceal = "abgs"
 
@@ -44,6 +47,11 @@ return {
       vim.g.vimtex_quickfix_mode = 0
       vim.g.vimtex_quickfix_open_on_warning = 0
 
+      -- VimTeX's enhanced matchparen runs on CursorMovedI/TextChangedP and is
+      -- noticeably expensive in TeX buffers.  Keep VimTeX syntax/scope support
+      -- for snippets, but avoid this per-keystroke delimiter-highlighting path.
+      vim.g.vimtex_matchparen_enabled = false
+
       vim.g.vimtex_toggle_fractions = {
         frac = "dfrac",
         dfrac = "frac",
@@ -62,6 +70,7 @@ return {
         ligatures = 1,
         cites = 1,
         fancy = 1,
+        texTabularChar = 1,
         spacing = 1,
         greek = 1,
         math_bounds = 0,
