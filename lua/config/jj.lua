@@ -212,12 +212,12 @@ function M.install_keymaps()
   map("n", "<leader>gf", M.picker("file_history"), "JJ Current File History")
   map("n", "<leader>gb", M.annotate("line"), "JJ Annotate Line")
   map({ "n", "x" }, "<leader>gB", M.browse, "JJ Browse")
-  map("n", "<leader>ghd", M.diff("open_vdiff"), "JJ Diff This")
-  map("n", "<leader>ghD", M.diff("open_hdiff"), "JJ Diff This Horizontal")
-  map("n", "<leader>ghp", M.cmd("j", "diff"), "JJ Diff")
 
   map("n", "<leader>j?", M.which_key_help, "JJ Key Help")
   map("n", "<leader>jd", M.cmd("describe"), "JJ Describe")
+  map("n", "<leader>jhd", M.diff("open_vdiff"), "JJ Diff This")
+  map("n", "<leader>jhD", M.diff("open_hdiff"), "JJ Diff This Horizontal")
+  map("n", "<leader>jhp", M.cmd("j", "diff"), "JJ Diff")
   map("n", "<leader>jl", M.cmd("log", M.log_opts), "JJ Log")
   map("n", "<leader>jL", M.cmd("log", M.log_all_opts), "JJ Log All")
   map("n", "<leader>jn", M.cmd("new", { show_log = true }), "JJ New")
@@ -237,7 +237,8 @@ function M.install_keymaps()
 
   require("which-key").add({
     { "<leader>g", group = "jj" },
-    { "<leader>gh", group = "jj diff" },
+    { "<leader>gh", group = "hunks" },
+    { "<leader>jh", group = "jj diff" },
   })
 end
 
@@ -353,7 +354,7 @@ local function disable_floating_hide_keymap()
   end
 end
 
----@param value any
+---@param value unknown
 ---@return boolean
 local function is_empty_table(value)
   return type(value) == "table" and next(value) == nil
@@ -419,42 +420,228 @@ local function close_windows_for_buf(buf)
   end
 end
 
+---@param buf integer?
+local function delete_buf_closing_windows(buf)
+  if not buf or not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
+
+  close_windows_for_buf(buf)
+  if vim.api.nvim_buf_is_valid(buf) then
+    pcall(vim.api.nvim_buf_delete, buf, { force = true })
+  end
+end
+
+---@param chan integer?
+local function close_chan(chan)
+  if chan then
+    pcall(vim.fn.chanclose, chan)
+  end
+end
+
+---@param job_id integer?
+local function stop_job(job_id)
+  if job_id then
+    pcall(vim.fn.jobstop, job_id)
+  end
+end
+
+---@type table[]
+local suspended_floating_buffers = {}
+
+---@param cmd string|string[]
+---@return string?
+local function floating_subcmd(cmd)
+  if type(cmd) == "table" then
+    return cmd[2]
+  end
+
+  return vim.split(cmd, "%s+", { trimempty = true })[2]
+end
+
+---@param win integer?
+---@return table?
+local function floating_win_config(win)
+  if not win or not vim.api.nvim_win_is_valid(win) then
+    return nil
+  end
+
+  return vim.api.nvim_win_get_config(win)
+end
+
+---@param config table?
+---@return table
+local function normalized_floating_config(config)
+  local max_width = math.max(vim.o.columns - 2, 1)
+  local max_height = math.max(vim.o.lines - 4, 1)
+  local width = math.min((config and config.width) or math.floor(vim.o.columns * 0.95), max_width)
+  local height = math.min((config and config.height) or math.floor(vim.o.lines * 0.9), max_height)
+
+  config = vim.tbl_extend("force", {
+    relative = "editor",
+    width = width,
+    height = height,
+    row = math.floor((vim.o.lines - height) / 2),
+    col = math.floor((vim.o.columns - width) / 2),
+    border = "rounded",
+    style = "minimal",
+    title = " JJ ",
+    title_pos = "center",
+  }, config or {})
+
+  config.width = math.min(config.width, max_width)
+  config.height = math.min(config.height, max_height)
+  config.row = math.max(math.min(config.row or 0, math.max(vim.o.lines - config.height - 1, 0)), 0)
+  config.col = math.max(math.min(config.col or 0, math.max(vim.o.columns - config.width, 0)), 0)
+  return config
+end
+
+---@param terminal jj.ui.terminal
+---@return boolean
+local function suspend_floating_buffer(terminal)
+  local state = terminal.state
+  local buf = state.floating_buf
+  if not buf or not vim.api.nvim_buf_is_valid(buf) or vim.bo[buf].modifiable then
+    return false
+  end
+
+  local win = vim.fn.bufwinid(buf)
+  local entry = {
+    buf = buf,
+    cursor = win ~= -1 and vim.api.nvim_win_get_cursor(win) or nil,
+    floating_buf_cmd = state.floating_buf_cmd,
+    state_buf = state.buf == buf,
+    buf_cmd = state.buf_cmd,
+    win_config = floating_win_config(win),
+  }
+
+  close_windows_for_buf(buf)
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return false
+  end
+
+  suspended_floating_buffers[#suspended_floating_buffers + 1] = entry
+  if state.buf == buf then
+    state.buf = nil
+    state.buf_cmd = nil
+  end
+  state.floating_buf = nil
+  state.floating_buf_cmd = nil
+  state.floating_chan = nil
+  state.floating_job_id = nil
+  return true
+end
+
+---@param terminal jj.ui.terminal
+---@return boolean
+local function restore_suspended_floating_buffer(terminal)
+  while #suspended_floating_buffers > 0 do
+    local entry = table.remove(suspended_floating_buffers)
+    if entry.buf and vim.api.nvim_buf_is_valid(entry.buf) then
+      local ok, win = pcall(
+        vim.api.nvim_open_win,
+        entry.buf,
+        true,
+        normalized_floating_config(entry.win_config)
+      )
+      if not ok then
+        ok, win = pcall(vim.api.nvim_open_win, entry.buf, true, normalized_floating_config())
+      end
+      if ok then
+        terminal.state.floating_buf = entry.buf
+        terminal.state.floating_buf_cmd = entry.floating_buf_cmd
+        terminal.state.floating_chan = nil
+        terminal.state.floating_job_id = nil
+        if entry.state_buf then
+          terminal.state.buf = entry.buf
+          terminal.state.buf_cmd = entry.buf_cmd
+        end
+        if entry.cursor and vim.api.nvim_win_is_valid(win) then
+          pcall(vim.api.nvim_win_set_cursor, win, entry.cursor)
+        end
+        return true
+      end
+    end
+  end
+
+  return false
+end
+
+local function clear_suspended_floating_buffers()
+  for _, entry in ipairs(suspended_floating_buffers) do
+    delete_buf_closing_windows(entry.buf)
+  end
+  suspended_floating_buffers = {}
+end
+
 function M.patch_floating_close()
   if floating_close_patched then
     return
   end
 
   local terminal = require("jj.ui.terminal")
-  local original_close_terminal_buffer = terminal.close_terminal_buffer
+  local original_run = terminal.run
+  local original_run_floating = terminal.run_floating
+  local original_run_tooltip = terminal.run_tooltip
 
   -- In floating mode the displayed buffer and the logical command buffer are
-  -- easy to desync. Close visible windows first, then clear jj.nvim's state.
-  terminal.close_floating_buffer = function()
+  -- easy to desync. Always close visible windows before wiping or replacing a
+  -- jj.nvim buffer so Neovim does not leave a nameless scratch window behind.
+  ---@param restore_previous? boolean
+  local function close_floating_buffer(restore_previous)
     local state = terminal.state
     local buf = state.floating_buf
 
-    if state.floating_chan then
-      pcall(vim.fn.chanclose, state.floating_chan)
-    end
-    if state.floating_job_id then
-      pcall(vim.fn.jobstop, state.floating_job_id)
-    end
-    close_windows_for_buf(buf)
-    if buf and vim.api.nvim_buf_is_valid(buf) then
-      pcall(vim.api.nvim_buf_delete, buf, { force = true })
-    end
+    close_chan(state.floating_chan)
+    stop_job(state.floating_job_id)
+    delete_buf_closing_windows(buf)
 
     if state.buf == buf then
       state.buf = nil
+      state.buf_cmd = nil
     end
     state.floating_chan = nil
     state.floating_job_id = nil
     state.floating_buf = nil
     state.floating_buf_cmd = nil
+
+    if restore_previous ~= false then
+      restore_suspended_floating_buffer(terminal)
+    end
+  end
+
+  terminal.close_floating_buffer = function()
+    close_floating_buffer(true)
+  end
+
+  terminal.hide_floating_buffer = terminal.close_floating_buffer
+
+  terminal.close_tooltip = function()
+    local state = terminal.state
+    local buf = state.tooltip_buf
+
+    close_chan(state.tooltip_chan)
+    stop_job(state.tooltip_job_id)
+    if state.tooltip_close_autocmd then
+      pcall(vim.api.nvim_del_autocmd, state.tooltip_close_autocmd)
+    end
+    delete_buf_closing_windows(buf)
+
+    state.tooltip_chan = nil
+    state.tooltip_job_id = nil
+    state.tooltip_buf = nil
+    state.tooltip_win = nil
+    state.tooltip_close_autocmd = nil
   end
 
   terminal.close_terminal_buffer = function()
     local state = terminal.state
+
+    if state.tooltip_buf then
+      terminal.close_tooltip()
+      return
+    end
+
     if
       state.floating_buf
       and vim.api.nvim_buf_is_valid(state.floating_buf)
@@ -464,7 +651,51 @@ function M.patch_floating_close()
       return
     end
 
-    original_close_terminal_buffer()
+    local buf = state.buf
+    close_chan(state.chan)
+    stop_job(state.job_id)
+    delete_buf_closing_windows(buf)
+
+    if state.buf == buf then
+      state.buf = nil
+    end
+    state.buf_cmd = nil
+    state.chan = nil
+    state.job_id = nil
+  end
+
+  terminal.run_floating = function(cmd, keymaps, float_opts)
+    local subcmd = floating_subcmd(cmd)
+    local opens_nested_detail = subcmd == "show" or subcmd == "diff"
+
+    if terminal.state.floating_buf and opens_nested_detail then
+      if terminal.state.tooltip_buf or terminal.state.tooltip_close_autocmd then
+        terminal.close_tooltip()
+      end
+      if not suspend_floating_buffer(terminal) then
+        close_floating_buffer(false)
+      end
+    elseif terminal.state.floating_buf then
+      close_floating_buffer(false)
+      clear_suspended_floating_buffers()
+    end
+
+    return original_run_floating(cmd, keymaps, float_opts)
+  end
+
+  terminal.run_tooltip = function(cmd, tool_opts)
+    if terminal.state.tooltip_buf or terminal.state.tooltip_close_autocmd then
+      terminal.close_tooltip()
+    end
+    return original_run_tooltip(cmd, tool_opts)
+  end
+
+  terminal.run = function(cmd, keymaps)
+    local state = terminal.state
+    if state.buf ~= state.floating_buf then
+      delete_buf_closing_windows(state.buf)
+    end
+    return original_run(cmd, keymaps)
   end
 
   floating_close_patched = true

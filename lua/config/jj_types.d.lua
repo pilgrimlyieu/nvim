@@ -1,0 +1,42 @@
+---@meta
+
+---Thin LuaLS overlay for the external `jj.nvim` plugin.
+---
+---`jj.nvim` ships the real `jj.*` annotations. LazyDev is configured to load
+---that plugin library while editing this config, so this file only keeps the
+---symbols needed by standalone checks plus fields that are missing upstream.
+
+---@alias jj.keymap string|string[]
+
+---Class stubs used when LuaLS runs without LazyDev.
+---The plugin definitions provide the actual field lists inside Neovim.
+---@class jj.Config
+---@class jj.cmd.log_opts
+---@field summary? boolean
+---@field reversed? boolean
+---@field no_graph? boolean
+---@field limit? integer
+---@field revisions? string
+---@field raw_flags? string
+---@class jj.cmd.new_opts
+---@class jj.cmd.diff_opts
+---@class jj.cmd.diff_history_opts
+---@class jj.cmd.bookmark
+---@class jj.cmd.push_opts
+---@class jj.cmd.open_pr_opts
+---@class jj.cmd.fetch_pr_opts
+---@class jj.cmd.split.opts
+---@class jj.cmd.floating.keymaps
+---@field close? jj.keymap
+---@field hide? jj.keymap
+---@class jj.diff.current_opts
+---@class jj.diff.revision_opts
+---@class jj.diff.revisions_opts
+---@class jj.diff.diff_opts
+
+---Runtime log-buffer keymaps that are present in current `jj.nvim` defaults
+---but are not declared in the plugin's `jj.cmd.log.keymaps` annotation.
+---@class jj.cmd.log.keymaps
+---@field split? jj.keymap
+---@field select_next_revision? jj.keymap
+---@field select_prev_revision? jj.keymap

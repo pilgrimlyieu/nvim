@@ -4,7 +4,8 @@ return {
     opts = {
       spec = {
         { "<leader>j", group = "jj" },
-        { "<leader>gh", group = "hunks / jj diff" },
+        { "<leader>gh", group = "hunks" },
+        { "<leader>jh", group = "jj diff" },
       },
       triggers = {
         { "<auto>", mode = "nixsotc" },
