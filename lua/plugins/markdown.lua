@@ -7,9 +7,14 @@ return {
     "iamcco/markdown-preview.nvim",
     ft = "markdown",
     init = function()
+      -- Avoid full content refresh on every cursor move; it makes the preview
+      -- jump to the top before markdown-preview.nvim reapplies scroll sync.
+      vim.g.mkdp_refresh_slow = 1
       vim.g.mkdp_port = "18282"
       vim.g.mkdp_theme = "light"
       vim.g.mkdp_preview_options = {
+        disable_sync_scroll = 0,
+        sync_scroll_type = "relative",
         katex = {
           trust = false,
           macros = {
