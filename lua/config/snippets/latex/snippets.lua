@@ -5,6 +5,7 @@ local nodes = require("config.snippets.nodes")
 local symbols = require("config.snippets.symbols")
 local triggers = require("config.snippets.triggers")
 local h = require("config.snippets.latex.helpers")
+local util = require("config.snippets.util")
 
 local s = ls.snippet
 local t = ls.text_node
@@ -25,10 +26,34 @@ local style_snippet = h.style_snippet
 
 local M = {}
 
+---@param fallback SnipCondition
+---@param contexts SnipMathContexts?
+---@param key "not_chem"|"not_unit"|"pure"|"chem"
+---@return SnipCondition
+local function context_or(fallback, contexts, key)
+  return contexts and contexts[key] or fallback
+end
+
+---@param fallback SnipCondition
+---@param contexts SnipMathContexts?
+---@return SnipCondition
+local function inline_or_display_condition(fallback, contexts)
+  if contexts and contexts.inline and contexts.display then
+    return util.or_conditions(contexts.inline, contexts.display)
+  end
+  return fallback
+end
+
 ---Return high-frequency manual LaTeX math snippets.
 ---@param condition SnipCondition
+---@param contexts? SnipMathContexts
 ---@return SnipNode[]
-function M.math_snippets(condition)
+function M.math_snippets(condition, contexts)
+  local layout_condition = inline_or_display_condition(condition, contexts)
+  local not_chem_condition = context_or(condition, contexts, "not_chem")
+  local not_unit_condition = context_or(condition, contexts, "not_unit")
+  local chem_condition = context_or(condition, contexts, "chem")
+
   local snippets = {
     s(
       with_condition({ trig = "sqrt", name = "root" }, condition),
@@ -91,19 +116,19 @@ function M.math_snippets(condition)
       with_condition({ trig = "nint", name = "indefinite integral" }, condition),
       fmta([[\int <> \d <>]], { visual_insert(1), i(2, "x") })
     ),
-    s(with_condition({ trig = "env", name = "environment" }, condition), { d(1, environment_node(false)) }),
-    s(with_condition({ trig = "envo", name = "environment with option" }, condition), { d(1, environment_node(true)) }),
+    s(with_condition({ trig = "env", name = "environment" }, layout_condition), { d(1, environment_node(false)) }),
+    s(with_condition({ trig = "envo", name = "environment with option" }, layout_condition), { d(1, environment_node(true)) }),
     s(
-      with_condition({ trig = "case", name = "left brace aligned" }, condition),
+      with_condition({ trig = "case", name = "left brace aligned" }, layout_condition),
       { d(1, math_environment_node("case")) }
     ),
-    s(with_condition({ trig = "cases", name = "cases" }, condition), { d(1, math_environment_node("cases")) }),
-    s(with_condition({ trig = "align", name = "aligned" }, condition), { d(1, math_environment_node("align")) }),
+    s(with_condition({ trig = "cases", name = "cases" }, layout_condition), { d(1, math_environment_node("cases")) }),
+    s(with_condition({ trig = "align", name = "aligned" }, layout_condition), { d(1, math_environment_node("align")) }),
     s(with_condition({ trig = "txt", name = "text" }, condition), fmta([[\text{<>}]], { visual_insert(1) })),
     s(with_condition({ trig = "text", name = "text" }, condition), fmta([[\text{<>}]], { visual_insert(1) })),
     s(with_condition({ trig = "tt", name = "text" }, condition), fmta([[\text{<>}]], { visual_insert(1) })),
-    s(with_condition({ trig = "ce", name = "chemistry" }, condition), fmta([[\ce{<>}]], { visual_insert(1) })),
-    s(with_condition({ trig = "pu", name = "unit" }, condition), fmta([[\pu{<>}]], { visual_insert(1) })),
+    s(with_condition({ trig = "ce", name = "chemistry" }, not_chem_condition), fmta([[\ce{<>}]], { visual_insert(1) })),
+    s(with_condition({ trig = "pu", name = "unit" }, not_unit_condition), fmta([[\pu{<>}]], { visual_insert(1) })),
     s(
       with_condition({ trig = "buji", name = "complement" }, condition),
       fmta([[\complement_{<>}]], { visual_insert(1) })
@@ -166,7 +191,11 @@ function M.math_snippets(condition)
     ),
     s(with_condition({ trig = "bm", name = "bold math" }, condition), fmta([[\bm{<>}]], { visual_insert(1) })),
     s(with_condition({ trig = "tag", name = "tag" }, condition), fmta([[\tag{<>}]], { i(1) })),
-    s(with_condition({ trig = "=", wordTrig = false, name = "aligned equal" }, condition), t("&=")),
+    s(with_condition({ trig = "=", wordTrig = false, name = "aligned equal" }, not_chem_condition), t("&=")),
+    s(
+      with_condition({ trig = "=", wordTrig = false, name = "chemical equal" }, chem_condition),
+      fmta([[ \xlongequal[<>]{\enspace <>\enspace} ]], { i(1), i(2) })
+    ),
     s(with_condition({ trig = "&=", wordTrig = false, name = "plain equal" }, condition), t("=")),
     s(
       with_condition({ trig = "_=", name = "long equal" }, condition),

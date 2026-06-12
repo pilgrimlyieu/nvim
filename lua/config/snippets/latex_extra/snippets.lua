@@ -1,4 +1,4 @@
----Manual low-frequency LaTeX math snippets from the legacy collection.
+---Manual low-frequency LaTeX math snippets.
 ---
 ---These snippets are normal completion/trigger snippets rather than typing-time
 ---autosnippets.  They are grouped apart from the helper engines so the actual
@@ -40,7 +40,10 @@ local visual_insert = h.visual_insert
 
 local M = {}
 
----Return a condition for snippets that were inline in math but line-begin in display math.
+---Return a condition for snippets that are inline in inline math and line-begin in display math.
+---
+---Layout conditions stay separate from the general math condition because they
+---only describe inline/display placement.
 ---@param condition SnipCondition
 ---@param contexts? SnipMathContexts
 ---@return SnipCondition
@@ -51,7 +54,7 @@ local function inline_or_display_line_condition(condition, contexts)
   return condition
 end
 
----Return the condition used by legacy inline-only evaluator snippets.
+---Return the condition used by inline-only evaluator snippets.
 ---@param condition SnipCondition
 ---@param contexts? SnipMathContexts
 ---@return SnipCondition
@@ -59,12 +62,20 @@ local function inline_condition(condition, contexts)
   return contexts and contexts.inline or condition
 end
 
----Return the condition used by legacy display/end evaluator snippets.
+---Return the condition used by display-line evaluator snippets.
 ---@param condition SnipCondition
 ---@param contexts? SnipMathContexts
 ---@return SnipCondition
 local function display_line_condition(condition, contexts)
   return util.with_line_begin(contexts and contexts.display or condition)
+end
+
+---Return the condition used by display-only snippets.
+---@param condition SnipCondition
+---@param contexts? SnipMathContexts
+---@return SnipCondition
+local function display_condition(condition, contexts)
+  return contexts and contexts.display or condition
 end
 
 ---Build a calculation environment that stays inline inside inline math.
@@ -236,7 +247,7 @@ function M.math_snippets(condition, contexts)
     literal("tes", [[\textstyle ]], "text style", condition),
     literal("lts", [[\limits]], "limits", condition, { wordTrig = false }),
     s(
-      with_condition({ trig = "cbox", name = "theorem box" }, condition),
+      with_condition({ trig = "cbox", name = "theorem box" }, display_condition(condition, contexts)),
       fmta([[\fcolorbox{#FF69B4}{trasparent}{$<>$}<>]], { visual_insert(1), i(0) })
     ),
     s(

@@ -344,7 +344,7 @@ function M.snippets(condition)
     s(
       with_condition(
         { trig = "temp", name = "note template" },
-        util.on_first_buffer_line(util.with_trigger_column(condition, 3))
+        util.on_first_buffer_line(util.with_trigger_column(condition, 0))
       ),
       {
         f(week_title),
@@ -649,7 +649,7 @@ tags: {}
     ),
     s(with_condition({ trig = "tag", name = "Hexo tag" }, condition), fmta([[{{% <> %}}]], { visual_insert(1) })),
     s(
-      with_condition({ trig = "adm", name = "admonition" }, util.with_trigger_column(condition, 2)),
+      with_condition({ trig = "adm", name = "admonition" }, util.with_trigger_column(condition, 0)),
       fmt(
         [[!!! {} {}
     {}]],
@@ -661,7 +661,7 @@ tags: {}
       )
     ),
     s(
-      with_condition({ trig = "tabs", name = "tabs" }, util.with_trigger_column(condition, 3)),
+      with_condition({ trig = "tabs", name = "tabs" }, util.with_trigger_column(condition, 0)),
       fmta(
         [[{{% tabs <>, <> %}}
 <>
@@ -670,7 +670,7 @@ tags: {}
       )
     ),
     s(
-      with_condition({ trig = "tab", name = "tab" }, util.with_trigger_column(condition, 2)),
+      with_condition({ trig = "tab", name = "tab" }, util.with_trigger_column(condition, 0)),
       fmt(
         [[<!-- tab {} -->
 {}

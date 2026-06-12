@@ -20,10 +20,22 @@ local visual_insert = h.visual_insert
 
 local M = {}
 
+---@param fallback SnipCondition
+---@param contexts SnipMathContexts?
+---@param key "not_unit"|"pure"
+---@return SnipCondition
+local function context_or(fallback, contexts, key)
+  return contexts and contexts[key] or fallback
+end
+
 ---Return high-frequency LaTeX math autosnippets.
 ---@param condition SnipCondition
+---@param contexts? SnipMathContexts
 ---@return SnipNode[]
-function M.math_autosnippets(condition)
+function M.math_autosnippets(condition, contexts)
+  local not_unit_condition = context_or(condition, contexts, "not_unit")
+  local pure_condition = context_or(condition, contexts, "pure")
+
   local autos = {
     word_auto_snippet("sqrt", "root", condition, fmta([[\sqrt[<>]{<>}]], { i(1, "3"), visual_insert(2) })),
     word_auto_snippet("gen", "square root", condition, fmta([[\sqrt{<>}]], { visual_insert(1) })),
@@ -65,7 +77,7 @@ function M.math_autosnippets(condition)
       fmta([[\xmapsto{<>}]], { visual_insert(1) })
     ),
     s(
-      with_condition({ trig = "//", wordTrig = false, name = "fraction", snippetType = "autosnippet" }, condition),
+      with_condition({ trig = "//", wordTrig = false, name = "fraction", snippetType = "autosnippet" }, not_unit_condition),
       fmta([[\dfrac{<>}{<>}]], { visual_insert(1), i(2) })
     ),
     s(
@@ -75,7 +87,7 @@ function M.math_autosnippets(condition)
         wordTrig = false,
         name = "simple fraction",
         snippetType = "autosnippet",
-      }, condition),
+      }, not_unit_condition),
       fmta([[\dfrac{<>}{<>}]], { cap(1), visual_insert(1) })
     ),
     s(
@@ -109,7 +121,7 @@ function M.math_autosnippets(condition)
         wordTrig = false,
         name = "auto numeric subscript",
         snippetType = "autosnippet",
-      }, condition),
+      }, pure_condition),
       {
         f(function(_, snip)
           return snip.captures[1] .. "_" .. snip.captures[2]

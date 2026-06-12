@@ -1,9 +1,8 @@
 ---Shared LuaSnip context predicates.
 ---
----The old UltiSnips setup delegated most Markdown/LaTeX decisions to VimTeX via
----`mdtex.scopes`.  This module keeps math decisions on VimTeX for TeX and
----Markdown LaTeX zones, and uses Tree-sitter for Markdown/Typst code, comment,
----and Typst math scope.
+---Markdown/LaTeX math decisions come from VimTeX in TeX and Markdown LaTeX
+---zones. Tree-sitter supplies Markdown/Typst code, comment, and Typst math
+---scope checks.
 local M = {}
 local condition_objects = require("luasnip.extras.conditions")
 local nil_value = {}
@@ -202,6 +201,24 @@ function M.vimtex_math_show()
   return vimtex_in_mathzone()
 end
 
+---Return whether the current VimTeX command is not `\ce`.
+---
+---This is only a command exclusion. Callers that need math/filetype guarantees
+---must compose those gates separately.
+---@return boolean
+function M.vimtex_not_chem()
+  return current_cmd().name ~= "\\ce"
+end
+
+---Return whether the current VimTeX command is not `\pu`.
+---
+---This is only a command exclusion. Callers that need math/filetype guarantees
+---must compose those gates separately.
+---@return boolean
+function M.vimtex_not_unit()
+  return current_cmd().name ~= "\\pu"
+end
+
 ---Return whether the cursor is inside a LaTeX `\ce{...}` math command.
 ---@return boolean
 function M.vimtex_chem()
@@ -281,13 +298,13 @@ end
 ---Return whether TeX snippets should use text-mode behavior.
 ---@return boolean
 function M.vimtex_text()
-  return not M.vimtex_math() and not M.vimtex_comment() and not M.in_code()
+  return not vimtex_in_mathzone() and not M.vimtex_comment() and not M.in_code()
 end
 
 ---Return a cheap TeX text predicate for completion visibility.
 ---@return boolean
 function M.vimtex_text_show()
-  return not M.vimtex_math_show() and not M.vimtex_comment() and not M.in_code()
+  return not vimtex_in_mathzone() and not M.vimtex_comment() and not M.in_code()
 end
 
 ---Return whether Markdown LaTeX snippets should be suppressed as comments.
@@ -302,10 +319,16 @@ function M.markdown_latex_comment()
   return vim.bo.filetype == "markdown" and markdown_html_comment()
 end
 
+---Return whether Markdown LaTeX snippets are allowed to inspect math layout.
+---@return boolean
+local function markdown_latex_scope()
+  return vim.bo.filetype == "markdown" and not M.in_code() and not M.markdown_latex_comment()
+end
+
 ---Return whether Markdown LaTeX math snippets are allowed at the cursor.
 ---@return boolean
 function M.markdown_latex_math()
-  if vim.bo.filetype ~= "markdown" or M.in_code() or M.markdown_latex_comment() then
+  if not markdown_latex_scope() then
     return false
   end
 
@@ -315,11 +338,23 @@ end
 ---Return a cheap Markdown LaTeX math predicate for completion visibility.
 ---@return boolean
 function M.markdown_latex_math_show()
-  if vim.bo.filetype ~= "markdown" or M.in_code() or M.markdown_latex_comment() then
+  if not markdown_latex_scope() then
     return false
   end
 
   return M.vimtex_math_show()
+end
+
+---Return whether Markdown LaTeX inline layout snippets are allowed.
+---@return boolean
+function M.markdown_latex_inline_layout()
+  return markdown_latex_scope() and M.vimtex_inline_math()
+end
+
+---Return whether Markdown LaTeX display layout snippets are allowed.
+---@return boolean
+function M.markdown_latex_display_layout()
+  return markdown_latex_scope() and M.vimtex_display_math()
 end
 
 ---Return whether Markdown LaTeX inline-math snippets are allowed at the cursor.
@@ -361,19 +396,13 @@ end
 ---Return whether Markdown prose snippets are allowed at the cursor.
 ---@return boolean
 function M.markdown_latex_text()
-  return vim.bo.filetype == "markdown"
-    and not M.markdown_latex_math()
-    and not M.markdown_latex_comment()
-    and not M.in_code()
+  return markdown_latex_scope() and not vimtex_in_mathzone()
 end
 
 ---Return a cheap Markdown prose predicate for completion visibility.
 ---@return boolean
 function M.markdown_latex_text_show()
-  return vim.bo.filetype == "markdown"
-    and not M.markdown_latex_math_show()
-    and not M.markdown_latex_comment()
-    and not M.in_code()
+  return markdown_latex_scope() and not vimtex_in_mathzone()
 end
 
 ---Return whether Typst math snippets are allowed at the cursor.

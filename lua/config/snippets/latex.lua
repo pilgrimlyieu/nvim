@@ -10,16 +10,18 @@ local M = {}
 
 ---Return high-frequency manual LaTeX math snippets.
 ---@param condition SnipCondition
+---@param contexts? SnipMathContexts
 ---@return SnipNode[]
-function M.math_snippets(condition)
-  return snippets.math_snippets(condition)
+function M.math_snippets(condition, contexts)
+  return snippets.math_snippets(condition, contexts)
 end
 
 ---Return high-frequency LaTeX math autosnippets.
 ---@param condition SnipCondition
+---@param contexts? SnipMathContexts
 ---@return SnipNode[]
-function M.math_autosnippets(condition)
-  return autos.math_autosnippets(condition)
+function M.math_autosnippets(condition, contexts)
+  return autos.math_autosnippets(condition, contexts)
 end
 
 return M

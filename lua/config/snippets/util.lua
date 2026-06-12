@@ -41,10 +41,8 @@ local function trigger_start_column(line_to_cursor, matched_trigger)
   return vim.fn.strdisplaywidth(line_to_cursor) - vim.fn.strdisplaywidth(matched_trigger)
 end
 
----Return whether completion is editing a first token at an exact display column.
----
----LuaSnip has no built-in show-side equivalent for old `snip.column` context.
----The expansion side below still checks the real matched trigger start column.
+---Return whether completion is editing a first token whose trigger starts at
+---an exact display column.
 ---@param line_to_cursor? string
 ---@param column integer
 ---@return boolean
@@ -343,8 +341,7 @@ end
 
 ---Create an editable node from a transformed visual selection.
 ---
----This replaces legacy UltiSnips/TextMate replacement syntax with explicit Lua
----line transforms.
+---Use this when a visual placeholder needs an explicit Lua line transform.
 ---@param index integer
 ---@param transform fun(lines: string[], snip: SnipSnippet): string|string[]
 ---@param default? string|string[]

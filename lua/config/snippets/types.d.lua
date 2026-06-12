@@ -44,8 +44,12 @@
 ---@field show_condition SnipConditionLike Predicate used while showing completions.
 
 ---@class SnipMathContexts
----@field inline SnipCondition Condition for inline math zones.
----@field display SnipCondition Condition for display math zones.
+---@field inline SnipCondition Condition for inline math layout.
+---@field display SnipCondition Condition for display math layout.
+---@field not_chem SnipCondition Condition for math zones outside `\ce`.
+---@field not_unit SnipCondition Condition for math zones outside `\pu`.
+---@field pure SnipCondition Condition for math zones outside `\ce` and `\pu`.
+---@field chem SnipCondition Condition for math zones inside `\ce`.
 
 ---@alias SnipTriggerMatcher fun(line_to_cursor: string): string?, string[]?
 ---@alias SnipTriggerEngine fun(trigger?: string): SnipTriggerMatcher

@@ -12,15 +12,15 @@ local conditions = require("config.snippets.conditions")
 local util = require("config.snippets.util")
 
 local math = conditions.wrap(conditions.markdown_latex_math, conditions.markdown_latex_math_show)
+local not_chem = conditions.wrap(conditions.vimtex_not_chem)
+local not_unit = conditions.wrap(conditions.vimtex_not_unit)
 local math_contexts = {
-  inline = util.and_conditions(
-    math,
-    conditions.wrap(conditions.markdown_latex_inline_math, conditions.markdown_latex_inline_math_show)
-  ),
-  display = util.and_conditions(
-    math,
-    conditions.wrap(conditions.markdown_latex_display_math, conditions.markdown_latex_display_math_show)
-  ),
+  inline = conditions.wrap(conditions.markdown_latex_inline_layout),
+  display = conditions.wrap(conditions.markdown_latex_display_layout),
+  not_chem = util.and_conditions(math, not_chem),
+  not_unit = util.and_conditions(math, not_unit),
+  pure = util.and_conditions(math, not_chem, not_unit),
+  chem = util.and_conditions(math, conditions.wrap(conditions.vimtex_chem)),
 }
 
 local snippets = {}
@@ -29,8 +29,8 @@ local autosnippets = {}
 if groups.latex_core then
   local latex = require("config.snippets.latex")
 
-  vim.list_extend(snippets, latex.math_snippets(math))
-  vim.list_extend(autosnippets, latex.math_autosnippets(math))
+  vim.list_extend(snippets, latex.math_snippets(math, math_contexts))
+  vim.list_extend(autosnippets, latex.math_autosnippets(math, math_contexts))
 end
 
 if groups.latex_extra then
