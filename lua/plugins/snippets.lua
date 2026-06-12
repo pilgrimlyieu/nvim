@@ -384,6 +384,95 @@ local function setup_choice_hint()
   })
 end
 
+---Run autosnippet expansion only where it can plausibly match.
+local function setup_guarded_autosnippets()
+  local group = vim.api.nvim_create_augroup("config_luasnip_autosnippets", { clear = true })
+
+  local markdown_math_trigger_chars = {}
+  for char in ([[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\/=<>!.-+:|~,_'^)}]&]]):gmatch(".") do
+    markdown_math_trigger_chars[char] = true
+  end
+
+  local function ends_with(text, suffix)
+    return suffix ~= "" and text:sub(-#suffix) == suffix
+  end
+
+  local function is_ascii_word_char(char)
+    return char:match("^[A-Za-z0-9_]$") ~= nil
+  end
+
+  local function line_to_cursor_after_char(char)
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    local line = vim.api.nvim_get_current_line()
+    return line:sub(1, cursor[2]) .. char
+  end
+
+  local function markdown_text_autosnippet_candidate(text, char)
+    if char == "m" then
+      if text:match("^%s*dm$") then
+        return true
+      end
+
+      if ends_with(text, "lm") then
+        local before = text:sub(1, #text - 2)
+        local prefix = vim.fn.strcharpart(before, math.max(vim.fn.strchars(before) - 1, 0), 1)
+        return prefix == "" or not is_ascii_word_char(prefix)
+      end
+    end
+
+    if char == "," or char == "，" then
+      return ends_with(text, ",,") or ends_with(text, "，，")
+    end
+
+    if char == ";" or char == "；" then
+      return ends_with(text, ";;") or ends_with(text, "；；")
+    end
+
+    if char == "@" then
+      return text:match("^%s*@$") ~= nil and vim.api.nvim_win_get_cursor(0)[1] <= 2
+    end
+
+    return false
+  end
+
+  local function should_enable(buf)
+    return vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].buftype == ""
+  end
+
+  local function should_expand_auto(buf)
+    local char = vim.v.char or ""
+    if char == "" or char:match("%s") then
+      return false
+    end
+
+    if vim.bo[buf].filetype ~= "markdown" then
+      return true
+    end
+
+    local text = line_to_cursor_after_char(char)
+    if markdown_text_autosnippet_candidate(text, char) then
+      return true
+    end
+
+    if not markdown_math_trigger_chars[char] then
+      return false
+    end
+
+    return require("config.snippets.conditions").markdown_latex_math_show()
+  end
+
+  vim.api.nvim_create_autocmd("InsertCharPre", {
+    group = group,
+    callback = function(args)
+      if not should_enable(args.buf) or not should_expand_auto(args.buf) then
+        return
+      end
+
+      require("luasnip.util.feedkeys").feedkeys_insert("<cmd>lua require('luasnip').expand_auto()<cr>")
+    end,
+  })
+end
+
 ---Build LuaSnip `ext_opts` for one active node marker.
 ---@param label string
 ---@param hl_group string
@@ -508,9 +597,9 @@ return {
     ---@param opts ConfigLuaSnipOpts
     ---@return ConfigLuaSnipOpts
     opts = function(_, opts)
-      opts.enable_autosnippets = true
-      opts.region_check_events = "CursorMoved,CursorHold,InsertEnter"
-      opts.delete_check_events = opts.delete_check_events or "TextChanged"
+      opts.enable_autosnippets = false
+      opts.region_check_events = "CursorMoved,CursorHold"
+      opts.delete_check_events = "InsertLeave"
       configure_node_hints(opts)
       return opts
     end,
@@ -520,6 +609,7 @@ return {
       luasnip.setup(opts)
 
       load_project_snippets()
+      setup_guarded_autosnippets()
       setup_choice_hint()
     end,
     keys = snippet_keys,

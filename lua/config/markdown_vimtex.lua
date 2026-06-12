@@ -1,13 +1,25 @@
 local M = {}
 
-local augroup_name = "MarkdownVimtexSyntax"
-
 local math_regions = {
-  [[syntax region mkdMath start="\\\@<!\$" end="\$" skip="\\\$" contains=@markdownVimtexTex keepend]],
-  [[syntax region mkdMath start="\\\@<!\$\$" end="\$\$" skip="\\\$" contains=@markdownVimtexTex keepend]],
-  [[syntax region mkdMath start="\\\@<!\\(" end="\\\@<!\\)" contains=@markdownVimtexTex keepend]],
-  [[syntax region mkdMath start="\\\@<!\\\[" end="\\\@<!\\\]" contains=@markdownVimtexTex keepend]],
+  {
+    group = "texMathZoneTD",
+    region = [[syntax region texMathZoneTD start="\\\@<!\$\$" end="\$\$" skip="\\\$" keepend transparent]],
+  },
+  {
+    group = "texMathZoneTI",
+    region = [[syntax region texMathZoneTI start="\(^\|[^\\$]\)\zs\$\(\$\)\@!" end="\(^\|[^\\$]\)\zs\$\(\$\)\@!" skip="\\\$" keepend oneline transparent]],
+  },
+  {
+    group = "texMathZoneLD",
+    region = [[syntax region texMathZoneLD start="\\\@<!\\\[" end="\\\@<!\\\]" keepend transparent]],
+  },
+  {
+    group = "texMathZoneLI",
+    region = [[syntax region texMathZoneLI start="\\\@<!\\(" end="\\\@<!\\)" keepend oneline transparent]],
+  },
 }
+
+local abbreviation_definition = [=[syntax match mkdAbbreviationDefinition "^\*\[[^]]\+\]:.*$" contains=@Spell]=]
 
 ---@param bufnr integer
 local function valid_markdown_buffer(bufnr)
@@ -25,19 +37,17 @@ local function apply_bridge(bufnr)
   end
 
   vim.api.nvim_buf_call(bufnr, function()
-    if vim.bo.syntax == "markdown" and vim.b.markdown_vimtex_syntax then
-      return
-    end
-
-    vim.bo.syntax = "markdown"
+    pcall(vim.fn["vimtex#options#init"])
     vim.b.markdown_vimtex_syntax = true
 
-    vim.b.current_syntax = nil
-    vim.cmd("syntax include @markdownVimtexTex syntax/tex.vim")
-    vim.b.current_syntax = "markdown"
-
-    for _, region in ipairs(math_regions) do
-      vim.cmd(region)
+    vim.cmd("syntax sync minlines=200")
+    for _, item in ipairs(math_regions) do
+      vim.cmd("silent! syntax clear " .. item.group)
+    end
+    vim.cmd("silent! syntax clear mkdAbbreviationDefinition")
+    vim.cmd(abbreviation_definition)
+    for _, item in ipairs(math_regions) do
+      vim.cmd(item.region)
     end
   end)
 end
@@ -46,27 +56,7 @@ end
 function M.enable(bufnr)
   bufnr = (bufnr == nil or bufnr == 0) and vim.api.nvim_get_current_buf() or bufnr
 
-  vim.schedule(function()
-    apply_bridge(bufnr)
-  end)
-end
-
-function M.setup()
-  local group = vim.api.nvim_create_augroup(augroup_name, { clear = true })
-
-  vim.api.nvim_create_autocmd("FileType", {
-    group = group,
-    pattern = "markdown",
-    callback = function(args)
-      M.enable(args.buf)
-    end,
-  })
-
-  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-    if valid_markdown_buffer(bufnr) then
-      M.enable(bufnr)
-    end
-  end
+  apply_bridge(bufnr)
 end
 
 return M

@@ -1,4 +1,20 @@
+local line_count = vim.api.nvim_buf_line_count(0)
+local file_size = vim.fn.getfsize(vim.api.nvim_buf_get_name(0))
+local large_line_threshold = vim.g.markdown_large_line_threshold or 1000
+local large_size_threshold = vim.g.markdown_large_size_threshold or (80 * 1024)
+local large_markdown = line_count > large_line_threshold or file_size > large_size_threshold
+
 vim.opt_local.spell = true
+vim.opt_local.conceallevel = 0
+vim.b.markdown_large_file = large_markdown
+
+if large_markdown then
+  vim.b.snacks_indent = false
+  vim.b.snacks_scope = false
+  vim.b.minihipatterns_disable = true
+  vim.wo.foldmethod = "manual"
+  vim.wo.foldexpr = "0"
+end
 
 -- Keep Markdown prose buffers quiet.  LazyVim's Markdown extra enables a few
 -- automatic tools by default, but notes/math drafts should not lint or format
@@ -12,23 +28,11 @@ else
   vim.diagnostic.disable(0)
 end
 
-vim.g.vimtex_syntax_conceal = {
-  accents = 1,
-  ligatures = 0,
-  cites = 1,
-  fancy = 1,
-  texTabularChar = 1,
-  spacing = 1,
-  greek = 1,
-  math_bounds = 0,
-  math_delimiters = 1,
-  math_fracs = 1,
-  math_super_sub = 1,
-  math_symbols = 1,
-  sections = 0,
-  styles = 1,
-}
-
-vim.g.vimtex_compiler_enabled = false
-vim.g.vimtex_mappings_enabled = false
-vim.g.vimtex_imaps_enabled = false
+local markdown_buf = vim.api.nvim_get_current_buf()
+vim.schedule(function()
+  if vim.api.nvim_buf_is_valid(markdown_buf) and vim.bo[markdown_buf].filetype == "markdown" then
+    pcall(function()
+      require("config.markdown_vimtex").enable(markdown_buf)
+    end)
+  end
+end)

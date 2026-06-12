@@ -96,6 +96,21 @@ local function cached_call_vimtex(name, ...)
   end)
 end
 
+---@param text string
+---@param index integer
+---@return boolean
+local function is_escaped(text, index)
+  local count = 0
+  local cursor = index - 1
+
+  while cursor > 0 and text:sub(cursor, cursor) == "\\" do
+    count = count + 1
+    cursor = cursor - 1
+  end
+
+  return count % 2 == 1
+end
+
 ---Return VimTeX's current command metadata, or an empty table.
 ---@return VimtexCurrentCommand
 local function current_cmd()
@@ -162,6 +177,22 @@ end
 ---@return boolean
 local function markdown_html_comment()
   return ts_capture_matches("comment", "html")
+end
+
+---@return boolean
+local function markdown_latex_line_comment()
+  return cached_at_cursor("markdown_latex_line_comment", function()
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    local before = vim.api.nvim_get_current_line():sub(1, cursor[2])
+
+    for index = 1, #before do
+      if before:sub(index, index) == "%" and not is_escaped(before, index) then
+        return true
+      end
+    end
+
+    return false
+  end)
 end
 
 ---Return whether VimTeX considers the cursor in usable math context.
@@ -320,7 +351,7 @@ end
 ---Return whether Markdown LaTeX snippets should be suppressed as comments.
 ---@return boolean
 function M.markdown_latex_comment()
-  return vim.bo.filetype == "markdown" and markdown_html_comment()
+  return vim.bo.filetype == "markdown" and (markdown_html_comment() or markdown_latex_line_comment())
 end
 
 ---Return whether Markdown LaTeX snippets are allowed to inspect math layout.

@@ -3,9 +3,6 @@ return {
     "lervag/vimtex",
     ft = { "markdown", "tex" },
     init = function()
-      require("config.markdown_vimtex").setup()
-    end,
-    config = function()
       vim.g.tex_conceal = "abgs"
 
       vim.g.vimtex_view_method = "zathura"
