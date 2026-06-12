@@ -51,28 +51,28 @@ local function matrix_node(_, snip)
     v = [["|"]],
     V = [[("||", "||")]],
   }
-  local nodes = { t("mat(") }
+  local matrix_nodes = { t("mat(") }
   local jump = 1
 
   if delimiter[form] then
-    table.insert(nodes, t("delim: " .. delimiter[form] .. ", "))
+    table.insert(matrix_nodes, t("delim: " .. delimiter[form] .. ", "))
   end
 
   for row = 1, rows do
     for col = 1, cols do
-      table.insert(nodes, i(jump, row == col and "1" or "0"))
+      table.insert(matrix_nodes, i(jump, row == col and "1" or "0"))
       jump = jump + 1
       if col < cols then
-        table.insert(nodes, t(", "))
+        table.insert(matrix_nodes, t(", "))
       end
     end
     if row < rows then
-      table.insert(nodes, t({ ";", "  " }))
+      table.insert(matrix_nodes, t({ ";", "  " }))
     end
   end
 
-  table.insert(nodes, t(")"))
-  return sn(nil, nodes)
+  table.insert(matrix_nodes, t(")"))
+  return sn(nil, matrix_nodes)
 end
 
 ---Build a manual Typst style wrapper plus a simple postfix alias.

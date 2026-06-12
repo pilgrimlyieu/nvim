@@ -32,12 +32,7 @@ local function current_scope_cache()
   local changedtick = vim.api.nvim_buf_get_changedtick(bufnr)
   local cache = scope_cache[bufnr]
 
-  if
-    not cache
-    or cache.changedtick ~= changedtick
-    or cache.row ~= cursor[1]
-    or cache.col ~= cursor[2]
-  then
+  if not cache or cache.changedtick ~= changedtick or cache.row ~= cursor[1] or cache.col ~= cursor[2] then
     cache = {
       changedtick = changedtick,
       row = cursor[1],

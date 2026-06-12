@@ -304,6 +304,7 @@ function M.selected_lines(snip, default)
     if type(selected) == "table" then
       return selected
     end
+    ---@diagnostic disable-next-line: param-type-mismatch -- `has_text` already checks for non-string tables.
     return vim.split(selected, "\n", { plain = true })
   end
 

@@ -4,7 +4,6 @@ local ls = require("luasnip")
 local rep = require("luasnip.extras").rep
 local fmta = require("luasnip.extras.fmt").fmta
 local conditions = require("config.snippets.conditions")
-local groups = require("config.snippets.groups").values
 local nodes = require("config.snippets.nodes")
 local symbols = require("config.snippets.symbols")
 local triggers = require("config.snippets.triggers")
@@ -114,26 +113,10 @@ local snippets = {
 }
 
 vim.list_extend(snippets, {
-  short_math_word_snippet(
-    "ce",
-    "inline chemistry math",
-    short_math_body([[\(\ce{]], [[}\) ]])
-  ),
-  short_math_word_snippet(
-    "pu",
-    "inline unit math",
-    short_math_body([[\(\pu{]], [[}\) ]])
-  ),
-  short_math_word_snippet(
-    "rm",
-    "inline roman math",
-    short_math_body([[\(\mathrm{]], [[}\) ]])
-  ),
-  short_math_word_snippet(
-    "tt",
-    "inline text math",
-    short_math_body([[\(\text{]], [[}\) ]])
-  ),
+  short_math_word_snippet("ce", "inline chemistry math", short_math_body([[\(\ce{]], [[}\) ]])),
+  short_math_word_snippet("pu", "inline unit math", short_math_body([[\(\pu{]], [[}\) ]])),
+  short_math_word_snippet("rm", "inline roman math", short_math_body([[\(\mathrm{]], [[}\) ]])),
+  short_math_word_snippet("tt", "inline text math", short_math_body([[\(\text{]], [[}\) ]])),
   short_math_word_snippet(
     "case",
     "inline brace aligned",
@@ -191,18 +174,11 @@ vim.list_extend(snippets, {
 })
 
 for _, name in ipairs(symbols.markdown_inline_greek) do
-  snippets[#snippets + 1] =
-    short_math_word_snippet(name, "inline greek " .. name, fixed_short_math_body("\\(\\" .. symbols.latex_greek_command(name) .. "\\) "))
-end
-
-if groups.algorithms then
-  vim.list_extend(snippets, require("config.snippets.algorithms").latex_text_snippets(text))
-end
-
-if groups.course then
-  local course = require("config.snippets.course")
-  vim.list_extend(snippets, course.text_snippets(text))
-  vim.list_extend(snippets, course.template_snippets(text))
+  snippets[#snippets + 1] = short_math_word_snippet(
+    name,
+    "inline greek " .. name,
+    fixed_short_math_body("\\(\\" .. symbols.latex_greek_command(name) .. "\\) ")
+  )
 end
 
 local autosnippets = {

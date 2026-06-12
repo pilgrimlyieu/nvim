@@ -5,7 +5,6 @@
 ---`config.snippets.latex.*` by responsibility.
 local snippets = require("config.snippets.latex.snippets")
 local autos = require("config.snippets.latex.autos")
-local chem = require("config.snippets.latex.chem")
 
 local M = {}
 
@@ -21,13 +20,6 @@ end
 ---@return SnipNode[]
 function M.math_autosnippets(condition)
   return autos.math_autosnippets(condition)
-end
-
----Return LaTeX chemistry snippets.
----@param condition SnipCondition
----@return SnipNode[]
-function M.chem_snippets(condition)
-  return chem.chem_snippets(condition)
 end
 
 return M

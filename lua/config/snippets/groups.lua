@@ -6,7 +6,6 @@
 ---
 ---```lua
 ---vim.g.config_snippet_groups = {
----  course = false,
 ---  latex_extra = false,
 ---}
 ---```
@@ -17,9 +16,6 @@
 local M = {}
 
 ---@class ConfigSnippetGroupDefaults
----@field algorithms boolean Algorithm/textbook helper snippets.
----@field chemistry boolean Chemistry snippets that depend on VimTeX chem scope.
----@field course boolean Course-specific snippets and templates.
 ---@field latex_core boolean Core Markdown/TeX LaTeX math snippets.
 ---@field latex_extra boolean Large low-frequency LaTeX math migration group.
 ---@field markdown_math_reference boolean Markdown math reference blocks.
@@ -27,9 +23,6 @@ local M = {}
 ---@field typst_text boolean Typst text snippets.
 
 ---@class ConfigSnippetGroupOverrides
----@field algorithms? boolean Algorithm/textbook helper snippets.
----@field chemistry? boolean Chemistry snippets that depend on VimTeX chem scope.
----@field course? boolean Course-specific snippets and templates.
 ---@field latex_core? boolean Core Markdown/TeX LaTeX math snippets.
 ---@field latex_extra? boolean Large low-frequency LaTeX math migration group.
 ---@field markdown_math_reference? boolean Markdown math reference blocks.
@@ -38,9 +31,6 @@ local M = {}
 
 ---@type ConfigSnippetGroupDefaults
 local defaults = {
-  algorithms = true,
-  chemistry = true,
-  course = true,
   latex_core = true,
   latex_extra = true,
   markdown_math_reference = true,

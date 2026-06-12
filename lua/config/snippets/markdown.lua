@@ -42,34 +42,34 @@ local function table_node(align)
       right = "--:",
       center = ":-:",
     }
-    local nodes = {}
+    local cell_nodes = {}
     local jump = 1
 
     for row = 1, rows + 2 do
       if row == 2 then
-        table.insert(nodes, t("|"))
-        for col = 1, cols do
-          table.insert(nodes, t(delimiter[align] or delimiter.plain))
-          table.insert(nodes, t("|"))
+        table.insert(cell_nodes, t("|"))
+        for _ = 1, cols do
+          table.insert(cell_nodes, t(delimiter[align] or delimiter.plain))
+          table.insert(cell_nodes, t("|"))
         end
       else
-        table.insert(nodes, t("| "))
+        table.insert(cell_nodes, t("| "))
         for col = 1, cols do
           local placeholder = row == 1 and ("head" .. col) or ("R" .. (row - 2) .. "C" .. col)
-          table.insert(nodes, i(jump, placeholder))
+          table.insert(cell_nodes, i(jump, placeholder))
           jump = jump + 1
-          table.insert(nodes, t(" |"))
+          table.insert(cell_nodes, t(" |"))
           if col < cols then
-            table.insert(nodes, t(" "))
+            table.insert(cell_nodes, t(" "))
           end
         end
       end
       if row < rows + 2 then
-        table.insert(nodes, t({ "", "" }))
+        table.insert(cell_nodes, t({ "", "" }))
       end
     end
 
-    return sn(nil, nodes)
+    return sn(nil, cell_nodes)
   end
 end
 
@@ -407,30 +407,10 @@ end
 ---@return SnipNode[]
 function M.short_math_snippets(condition)
   local snippets = {
-    short_math_word_snippet(
-      "ce",
-      "inline chemistry",
-      condition,
-      short_math_body([[$\ce{]], [[}$ ]])
-    ),
-    short_math_word_snippet(
-      "pu",
-      "inline unit",
-      condition,
-      short_math_body([[$\pu{]], [[}$ ]])
-    ),
-    short_math_word_snippet(
-      "rm",
-      "inline roman math",
-      condition,
-      short_math_body([[$\mathrm{]], [[}$ ]])
-    ),
-    short_math_word_snippet(
-      "tt",
-      "inline text math",
-      condition,
-      short_math_body([[$\text{]], [[}$ ]])
-    ),
+    short_math_word_snippet("ce", "inline chemistry", condition, short_math_body([[$\ce{]], [[}$ ]])),
+    short_math_word_snippet("pu", "inline unit", condition, short_math_body([[$\pu{]], [[}$ ]])),
+    short_math_word_snippet("rm", "inline roman math", condition, short_math_body([[$\mathrm{]], [[}$ ]])),
+    short_math_word_snippet("tt", "inline text math", condition, short_math_body([[$\text{]], [[}$ ]])),
     short_math_word_snippet(
       "case",
       "inline brace aligned",
