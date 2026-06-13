@@ -8,7 +8,7 @@ return {
     dependencies = {
       "folke/snacks.nvim",
     },
-    cmd = { "J", "Jbrowse", "Jdiff", "Jvdiff", "Jhdiff" },
+    cmd = { "J", "Jbrowse", "Jdiff", "Jvdiff", "Jhdiff", "Jread", "Jedit", "Jsplit", "Jvsplit", "Jtabedit" },
     init = function()
       require("config.jj").init()
     end,
