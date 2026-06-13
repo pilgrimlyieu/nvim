@@ -15,15 +15,24 @@ vim.keymap.set("", "L", "$", { silent = true, desc = "End of the line" })
 vim.keymap.set("n", "Y", "<Cmd>%y<Cr>", { silent = true, desc = "Yank the whole file" })
 vim.keymap.set("i", "<C-s>", "<Cmd>w<Cr>", { silent = true, desc = "Save file" })
 
+-- Neovim 0.12 adds gr* LSP defaults. LazyVim already provides the useful
+-- actions through picker/leader mappings, so keep this prefix uncluttered.
+for _, key in ipairs({ "grr", "grn", "gri", "grt", "grx" }) do
+  pcall(vim.keymap.del, "n", key)
+end
+for _, mode in ipairs({ "n", "x" }) do
+  pcall(vim.keymap.del, mode, "gra")
+end
+
 vim.keymap.set(
   "n",
-  "<leader>o",
+  "<leader>oj",
   "<Cmd>call append(line('.'), repeat([''], v:count1))<CR>",
   { silent = true, desc = "Insert line below" }
 )
 vim.keymap.set(
   "n",
-  "<leader>O",
+  "<leader>ok",
   "<Cmd>call append(line('.') - 1, repeat([''], v:count1))<CR>",
   { silent = true, desc = "Insert line above" }
 )
