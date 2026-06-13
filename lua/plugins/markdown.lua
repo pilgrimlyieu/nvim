@@ -4,13 +4,30 @@ return {
     enabled = false,
   },
   {
-    "iamcco/markdown-preview.nvim",
-    ft = "markdown",
+    "pilgrimlyieu/markdown-preview.nvim",
+    name = "markdown-preview.nvim",
+    url = "git@github.com:pilgrimlyieu/markdown-preview.nvim.git",
+    cmd = { "MarkdownPreviewToggle", "MarkdownPreview", "MarkdownPreviewStop" },
+    build = "bun install --frozen-lockfile && bun run build-local",
+    keys = {
+      {
+        "<leader>cp",
+        ft = "markdown",
+        "<cmd>MarkdownPreviewToggle<cr>",
+        desc = "Markdown Preview",
+      },
+    },
     init = function()
       -- Avoid full content refresh on every cursor move; it makes the preview
       -- jump to the top before markdown-preview.nvim reapplies scroll sync.
       vim.g.mkdp_refresh_slow = 1
+      vim.g.mkdp_auto_close = 0
+      -- Start an independent preview server per buffer so several files can
+      -- keep live browser previews open at the same time.
+      vim.g.mkdp_multi_port = 1
       vim.g.mkdp_port = "18282"
+      vim.g.mkdp_port_range = 32
+      vim.g.mkdp_sync_scroll_on_cursor = 1
       vim.g.mkdp_theme = "light"
       vim.g.mkdp_preview_options = {
         disable_sync_scroll = 0,
@@ -65,6 +82,9 @@ return {
        endfunction
       ]])
       vim.g.mkdp_browserfunc = "OpenMarkdownPreview"
+    end,
+    config = function()
+      vim.cmd([[do FileType]])
     end,
   },
 }
