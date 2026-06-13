@@ -307,13 +307,17 @@ function M.vimtex_text_show()
   return not vimtex_in_mathzone() and not M.vimtex_comment() and not M.in_code()
 end
 
----Return whether Markdown LaTeX snippets should be suppressed as comments.
+---Return whether snippets should be suppressed inside code-like nodes.
 ---@return boolean
 function M.in_code()
+  if vim.bo.filetype == "markdown" then
+    return ts_capture_matches("markup.raw.block", "markdown") or ts_capture_matches("markup.raw", "markdown_inline")
+  end
+
   return ts_node_matches({ "code", "fence", "raw" })
 end
 
----Return whether Markdown LaTeX math snippets are allowed at the cursor.
+---Return whether Markdown LaTeX snippets should be suppressed as comments.
 ---@return boolean
 function M.markdown_latex_comment()
   return vim.bo.filetype == "markdown" and markdown_html_comment()
