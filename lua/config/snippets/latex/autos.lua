@@ -254,21 +254,6 @@ function M.math_autosnippets(condition, contexts)
     )
   end
 
-  for _, greek in ipairs(symbols.latex_short_greek) do
-    table.insert(
-      autos,
-      s(
-        with_condition({
-          trig = "\\" .. greek.trigger,
-          wordTrig = false,
-          name = "short greek " .. greek.trigger,
-          snippetType = "autosnippet",
-        }, condition),
-        t("\\" .. greek.output)
-      )
-    )
-  end
-
   return autos
 end
 

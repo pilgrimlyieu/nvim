@@ -138,7 +138,7 @@ for _, name in ipairs(greek_names) do
   M.latex_upper_greek[#M.latex_upper_greek + 1] = symbol(upper)
 end
 
----Backslash-prefixed short Greek autosnippet triggers for LaTeX math zones.
+---Backslash-prefixed short Greek triggers for LaTeX math zones.
 ---@type SnipSymbol[]
 M.latex_short_greek = copy_symbols(short_greek)
 M.latex_short_greek[#M.latex_short_greek + 1] = symbol("ve", "varepsilon")

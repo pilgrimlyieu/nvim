@@ -233,6 +233,20 @@ function M.math_snippets(condition, contexts)
     table.insert(snippets, literal_snippet(item[1], item[2], item[3], condition))
   end
 
+  for _, greek in ipairs(symbols.latex_short_greek) do
+    table.insert(
+      snippets,
+      s(
+        with_condition({
+          trig = "\\" .. greek.trigger,
+          wordTrig = false,
+          name = "short greek " .. greek.trigger,
+        }, condition),
+        t("\\" .. greek.output)
+      )
+    )
+  end
+
   for _, def in ipairs(symbols.math_styles) do
     if def.latex then
       vim.list_extend(snippets, style_snippet(def.trigger, def.latex, def.desc, condition))
