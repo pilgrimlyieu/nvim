@@ -6,6 +6,7 @@ vim.o.breakindent = true
 vim.o.showbreak = " ↪"
 
 vim.g.snacks_animate = false
+vim.g.trouble_lualine = false
 
 local opt = vim.opt
 
