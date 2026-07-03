@@ -234,19 +234,15 @@ function M.install_keymaps()
   map("n", "<leader>jb", M.cmd("bookmark_create"), "JJ Bookmark Create")
   map("n", "<leader>jB", M.cmd("bookmark_move"), "JJ Bookmark Move")
   map("n", "<leader>jA", M.annotate("file"), "JJ Annotate File")
-
-  require("which-key").add({
-    { "<leader>g", group = "jj" },
-    { "<leader>gh", group = "hunks" },
-    { "<leader>jh", group = "jj diff" },
-  })
 end
 
 function M.init()
   vim.api.nvim_create_autocmd("User", {
     group = augroup,
     pattern = "LazyVimKeymaps",
-    callback = M.install_keymaps,
+    callback = function()
+      vim.schedule(M.install_keymaps)
+    end,
   })
 
   vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
