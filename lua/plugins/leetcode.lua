@@ -10,6 +10,14 @@ local function repo_root()
   return vim.fs.normalize("~/Space/Study/LeetCode")
 end
 
+local function leetcode_gdb_adapter()
+  return {
+    type = "executable",
+    command = "gdb",
+    args = { "--interpreter=dap", "-x", repo_root() .. "/debug/leetcode.gdb" },
+  }
+end
+
 return {
   {
     "kawre/leetcode.nvim",
@@ -118,9 +126,11 @@ return {
           return
         end
         local lines = vim.split(res.stdout or "", "\n", { trimempty = true })
-        require("dap").run({
+        local dap = require("dap")
+        dap.adapters.leetcode_gdb = leetcode_gdb_adapter()
+        dap.run({
           name = "LeetCode",
-          type = "gdb",
+          type = "leetcode_gdb",
           request = "launch",
           program = lines[#lines],
           cwd = repo_root(),

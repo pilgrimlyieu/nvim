@@ -6,9 +6,24 @@ return {
       local keymap = vim.keymap
       local group = "dap_temp_keymaps"
 
+      local function leetcode_step_into()
+        local session = dap.session()
+        if not session or vim.tbl_get(session, "config", "type") ~= "leetcode_gdb" then
+          dap.step_into()
+          return
+        end
+        session:evaluate({ expression = "lc-step", context = "repl" }, function(err)
+          if err then
+            vim.schedule(function()
+              vim.notify(err.message or tostring(err), vim.log.levels.ERROR, { title = "dap" })
+            end)
+          end
+        end)
+      end
+
       local function set_dap_keymaps()
         keymap.set("n", "<Down>", dap.step_over, { desc = "DAP Step Over", silent = true })
-        keymap.set("n", "<Right>", dap.step_into, { desc = "DAP Step Into", silent = true })
+        keymap.set("n", "<Right>", leetcode_step_into, { desc = "DAP Step Into", silent = true })
         keymap.set("n", "<Left>", dap.step_out, { desc = "DAP Step Out", silent = true })
         keymap.set("n", "<Up>", dap.restart_frame, { desc = "DAP Restart Frame", silent = true })
       end
