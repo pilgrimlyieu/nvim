@@ -1,6 +1,17 @@
 return {
   {
     "folke/which-key.nvim",
+    keys = {
+      {
+        "<leader>",
+        function()
+          require("which-key").show({ keys = "<leader>", mode = "n" })
+        end,
+        desc = "which-key-trigger",
+        nowait = true,
+        silent = true,
+      },
+    },
     opts = function(_, opts)
       opts.spec = opts.spec or {}
       opts.icons = opts.icons or {}
