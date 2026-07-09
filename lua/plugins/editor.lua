@@ -3,6 +3,14 @@ return {
     "folke/flash.nvim",
     keys = {
       { "S", mode = { "n", "o", "x" }, false },
+      {
+        "gs",
+        mode = { "n", "x", "o" },
+        function()
+          require("flash").treesitter()
+        end,
+        desc = "Flash Treesitter",
+      },
     },
   },
   {

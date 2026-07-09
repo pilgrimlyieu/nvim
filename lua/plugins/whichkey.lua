@@ -55,6 +55,7 @@ return {
 
       remove_group(opts.spec, "<leader>g")
       remove_group(opts.spec, "<leader>gh")
+      remove_group(opts.spec, "gs")
 
       for index = #jj_icon_rules, 1, -1 do
         table.insert(opts.icons.rules, 1, jj_icon_rules[index])
@@ -70,6 +71,7 @@ return {
         { "<leader>gh", group = "hunks" },
         { "<leader>j", group = "jj" },
         { "<leader>jh", group = "jj diff" },
+        { "S", group = "surround", mode = { "n", "x" } },
       })
 
       opts.triggers = {
