@@ -5,7 +5,7 @@
 vim.keymap.set("i", "jk", "<Esc>", { silent = true, desc = "Escape insert mode" })
 vim.keymap.set("i", "kj", "<Esc>", { silent = true, desc = "Escape insert mode" })
 vim.keymap.set("n", "U", "<C-r>", { silent = true, desc = "Redo" })
-vim.keymap.set("", ";", ":", { silent = true, desc = "Command mode" })
+vim.keymap.set("", ";", ":", { desc = "Command mode" })
 vim.keymap.set("", ":", ",", { silent = true, desc = "Repeat opposite f/t/F/T" })
 vim.keymap.set("", ",", ";", { silent = true, desc = "Repeat f/t/F/T" })
 vim.keymap.set("", "`", "'", { silent = true, desc = "First non-blank location mark" })
