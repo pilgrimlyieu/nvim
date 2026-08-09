@@ -3,11 +3,18 @@ return {
     "MeanderingProgrammer/render-markdown.nvim",
     enabled = false,
   },
+  -- Replaced by the fork below. It needs a lazy.nvim name of its own for this
+  -- to work: sharing `markdown-preview.nvim` merges the two specs into one, and
+  -- `enabled = false` would then disable the fork as well.
+  {
+    "iamcco/markdown-preview.nvim",
+    enabled = false,
+  },
   {
     "pilgrimlyieu/markdown-preview.nvim",
-    name = "markdown-preview.nvim",
+    name = "markdown-preview",
     url = "git@github.com:pilgrimlyieu/markdown-preview.nvim.git",
-    cmd = { "MarkdownPreviewToggle", "MarkdownPreview", "MarkdownPreviewStop" },
+    cmd = { "MarkdownPreview", "MarkdownPreviewStop", "MarkdownPreviewToggle" },
     build = "bun install --frozen-lockfile && bun run build-local",
     keys = {
       {
@@ -17,20 +24,22 @@ return {
         desc = "Markdown Preview",
       },
     },
-    init = function()
-      -- Avoid full content refresh on every cursor move; it makes the preview
-      -- jump to the top before markdown-preview.nvim reapplies scroll sync.
-      vim.g.mkdp_refresh_slow = 1
-      vim.g.mkdp_auto_close = 0
-      -- Start an independent preview server per buffer so several files can
-      -- keep live browser previews open at the same time.
-      vim.g.mkdp_multi_port = 1
-      vim.g.mkdp_port = "18282"
-      vim.g.mkdp_port_range = 32
-      vim.g.mkdp_sync_scroll_on_cursor = 1
-      vim.g.mkdp_theme = "light"
-      vim.g.mkdp_preview_options = {
-        disable_sync_scroll = 0,
+    opts = {
+      auto_close = false,
+      theme = "light",
+      -- An independent server per buffer, so several files can keep live
+      -- browser previews open at the same time.
+      server = {
+        per_buffer = true,
+        port = 18282,
+        port_range = 32,
+      },
+      browser = function(url)
+        local edge = vim.fn.has("win32") == 1 and "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"
+          or "/mnt/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"
+        vim.fn.jobstart({ edge, "--app=" .. url }, { detach = true })
+      end,
+      render = {
         sync_scroll_type = "relative",
         katex = {
           trust = false,
@@ -75,16 +84,7 @@ return {
             ["\\@@label"] = "\\htmlId{label-#1}{\\tag*{#2}}",
           },
         },
-      }
-      vim.cmd([[
-       function OpenMarkdownPreview (url)
-         silent execute '!"/mnt/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" --app=' . a:url
-       endfunction
-      ]])
-      vim.g.mkdp_browserfunc = "OpenMarkdownPreview"
-    end,
-    config = function()
-      vim.cmd([[do FileType]])
-    end,
+      },
+    },
   },
 }
