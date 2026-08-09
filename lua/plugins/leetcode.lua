@@ -170,7 +170,6 @@ return {
   },
   {
     "zbirenbaum/copilot.lua",
-    optional = true,
     cond = function()
       return not is_leet_session()
     end,

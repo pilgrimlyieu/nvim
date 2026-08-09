@@ -1,7 +1,6 @@
 return {
   {
     "lervag/vimtex",
-    ft = { "markdown", "tex" },
     init = function()
       vim.g.tex_conceal = "abgs"
 

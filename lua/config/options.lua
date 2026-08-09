@@ -27,4 +27,15 @@ if vim.fn.has("win32") == 1 then
   opt.shellxquote = ""
 end
 
+-- mason.nvim only prepends its bin dir to PATH once it loads, which is now
+-- deferred past the first frame. Plugins that spawn servers at FileType time
+-- (e.g. rustaceanvim -> rust-analyzer) need the correct binaries resolvable
+-- earlier, so mirror mason's PATH setup here.
+do
+  local mason_bin = vim.fn.stdpath("data") .. "/mason/bin"
+  if vim.uv.fs_stat(mason_bin) then
+    vim.env.PATH = mason_bin .. (vim.fn.has("win32") == 1 and ";" or ":") .. vim.env.PATH
+  end
+end
+
 require("config/clipboard")

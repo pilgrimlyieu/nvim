@@ -23,6 +23,9 @@ return {
   },
   {
     "neovim/nvim-lspconfig",
+    event = function()
+      return { "VeryLazy" }
+    end,
     opts = function(_, opts)
       opts.servers = opts.servers or {}
 

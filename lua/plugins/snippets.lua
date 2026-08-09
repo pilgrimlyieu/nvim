@@ -593,7 +593,8 @@ return {
   },
   {
     "L3MON4D3/LuaSnip",
-    lazy = false,
+    lazy = true,
+    event = "InsertEnter",
     ---@param opts ConfigLuaSnipOpts
     ---@return ConfigLuaSnipOpts
     opts = function(_, opts)

@@ -1,5 +1,12 @@
 return {
   {
+    "zbirenbaum/copilot.lua",
+    optional = true,
+    event = function()
+      return { "InsertEnter" }
+    end,
+  },
+  {
     "folke/lazydev.nvim",
     opts = function(_, opts)
       -- Prefer jj.nvim's shipped annotations over a copied local type mirror.
