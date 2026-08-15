@@ -18,6 +18,15 @@ local function leetcode_gdb_adapter()
   }
 end
 
+local function gen_checks(q)
+  local ok, fn = pcall(dofile, repo_root() .. "/scripts/gen_checks.lua")
+  if not ok then
+    vim.notify("加载 gen_checks.lua 失败: " .. fn, vim.log.levels.WARN, { title = "leetcode" })
+    return
+  end
+  fn(q)
+end
+
 return {
   {
     "kawre/leetcode.nvim",
@@ -46,20 +55,20 @@ return {
               "// Created: " .. os.date("%Y-%m-%d %H:%M:%S"),
               "",
               '#include "../utils.h"',
-              "#include <bits/stdc++.h>",
               "",
               "using namespace std;",
             }
           end,
           after = {
             "int main() {",
-            "  Solution s;",
-            '  // CHECK(s.method("[1,2,3]"_vi), "[1,2]"_vi);',
-            "",
+            "  // @TESTAUTOGEN",
             "  return 0;",
             "}",
           },
         },
+      },
+      hooks = {
+        ["question_enter"] = { gen_checks },
       },
     },
     config = function(_, opts)
@@ -71,19 +80,30 @@ return {
       end
 
       map("<leader>kk", "<cmd>Leet menu<cr>", "主面板")
-      map("<leader>kl", "<cmd>Leet list<cr>", "题单")
-      map("<leader>kd", "<cmd>Leet desc toggle<cr>", "题面开关")
-      map("<leader>kt", "<cmd>Leet tabs<cr>", "已开题目")
-      map("<leader>kR", "<cmd>Leet random<cr>", "随机一题")
-      map("<leader>kD", "<cmd>Leet daily<cr>", "每日一题")
-      map("<leader>kr", "<cmd>Leet run<cr>", "远程样例测试")
-      map("<leader>ks", "<cmd>Leet submit<cr>", "提交")
       map("<leader>kc", "<cmd>Leet console<cr>", "测试用例控制台")
       map("<leader>ki", "<cmd>Leet info<cr>", "题目信息")
+      map("<leader>kt", "<cmd>Leet tabs<cr>", "已开题目")
       map("<leader>ky", "<cmd>Leet yank<cr>", "复制提交区")
+      map("<leader>kL", "<cmd>Leet lang<cr>", "切换语言")
+      map("<leader>kr", "<cmd>Leet run<cr>", "远程样例测试")
+      map("<leader>ks", "<cmd>Leet submit<cr>", "提交")
+      map("<leader>kR", "<cmd>Leet random<cr>", "随机一题")
+      map("<leader>kl", "<cmd>Leet list<cr>", "题单")
+      map("<leader>kD", "<cmd>Leet daily<cr>", "每日一题")
       map("<leader>ko", "<cmd>Leet open<cr>", "浏览器打开")
+      map("<leader>kS", "<cmd>Leet last_submit<cr>", "恢复上次提交代码")
+      map("<leader>ke", "<cmd>Leet reset<cr>", "重置代码部分")
+      map("<leader>kI", "<cmd>Leet inject<cr>", "重新注入")
+      map("<leader>kd", "<cmd>Leet desc toggle<cr>", "题面开关")
 
-      -- 本地编译运行（ASan/UBSan + CHECK 宏），justfile 见 LeetCode 仓库
+      map("<leader>kC", function()
+        local q = require("leetcode.utils").curr_question()
+        if q then
+          gen_checks(q)
+        end
+      end, "重新生成样例 CHECK")
+
+      -- 本地编译运行
       local function current_solution()
         local file = vim.api.nvim_buf_get_name(0)
         if vim.bo.buftype ~= "" or not file:match("%.cpp$") then
