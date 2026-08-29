@@ -71,6 +71,7 @@ return {
         { "<leader>gh", group = "hunks" },
         { "<leader>j", group = "jj" },
         { "<leader>jh", group = "jj diff" },
+        { "<leader>jb", group = "jj bookmark" },
         { "S", group = "surround", mode = { "n", "x" } },
       })
 

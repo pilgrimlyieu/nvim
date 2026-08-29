@@ -205,7 +205,7 @@ function M.install_keymaps()
 
   delete_lazyvim_git_keymaps()
 
-  map("n", "<leader>gg", M.cmd("status"), "JJ Status")
+  map("n", "<leader>gg", M.picker("status"), "JJ Status")
   map("n", "<leader>gG", M.cmd("log", M.log_opts), "JJ Log")
   map("n", "<leader>gl", M.cmd("log", M.log_opts), "JJ Log")
   map("n", "<leader>gL", M.cmd("log", M.log_all_opts), "JJ Log All")
@@ -222,18 +222,23 @@ function M.install_keymaps()
   map("n", "<leader>jL", M.cmd("log", M.log_all_opts), "JJ Log All")
   map("n", "<leader>jn", M.cmd("new", { show_log = true }), "JJ New")
   map("n", "<leader>je", M.cmd("edit"), "JJ Edit")
-  map("n", "<leader>js", M.cmd("status"), "JJ Status")
+  map("n", "<leader>js", M.picker("status"), "JJ Status")
+  map("n", "<leader>jc", M.picker("conflict"), "JJ conflicts")
+  map("n", "<leader>jC", M.picker("conflict_sections"), "JJ conflict sections")
   map("n", "<leader>jr", M.cmd("rebase"), "JJ Rebase")
   map("n", "<leader>jS", M.cmd("squash"), "JJ Squash")
   map("n", "<leader>ju", M.cmd("undo"), "JJ Undo")
   map("n", "<leader>jy", M.cmd("redo"), "JJ Redo")
-  map("n", "<leader>ja", M.cmd("abandon"), "JJ Abandon")
+  map("n", "<leader>jA", M.cmd("abandon"), "JJ Abandon")
   map("n", "<leader>jf", M.cmd("fetch"), "JJ Fetch")
   map("n", "<leader>jp", M.cmd("push"), "JJ Push")
   map("n", "<leader>jP", M.cmd("open_pr"), "JJ Open PR")
-  map("n", "<leader>jb", M.cmd("bookmark_create"), "JJ Bookmark Create")
-  map("n", "<leader>jB", M.cmd("bookmark_move"), "JJ Bookmark Move")
-  map("n", "<leader>jA", M.annotate("file"), "JJ Annotate File")
+  map("n", "<leader>jbc", M.cmd("bookmark_create"), "JJ Bookmark Create")
+  map("n", "<leader>jbm", M.cmd("bookmark_move"), "JJ Bookmark Move")
+  map("n", "<leader>jbt", M.cmd("bookmark_track"), "JJ Bookmark Track")
+  map("n", "<leader>jbf", M.cmd("bookmark_forget"), "JJ Bookmark Forget")
+  map("n", "<leader>jbd", M.cmd("bookmark_delete"), "JJ Bookmark Delete")
+  map("n", "<leader>ja", M.annotate("file"), "JJ Annotate File")
 end
 
 function M.init()
@@ -534,12 +539,7 @@ local function restore_suspended_floating_buffer(terminal)
   while #suspended_floating_buffers > 0 do
     local entry = table.remove(suspended_floating_buffers)
     if entry.buf and vim.api.nvim_buf_is_valid(entry.buf) then
-      local ok, win = pcall(
-        vim.api.nvim_open_win,
-        entry.buf,
-        true,
-        normalized_floating_config(entry.win_config)
-      )
+      local ok, win = pcall(vim.api.nvim_open_win, entry.buf, true, normalized_floating_config(entry.win_config))
       if not ok then
         ok, win = pcall(vim.api.nvim_open_win, entry.buf, true, normalized_floating_config())
       end
