@@ -42,7 +42,7 @@ local punctuation = {
 -- byte windows cap suffix scans to the migrated shorthand grammar instead of
 -- treating autosnippets as paragraph-scale parsers.
 local FRACTION_TRIGGER_WINDOW = 80 -- simple atom/script numerators and short parenthesized groups.
-local MATRIX_TRIGGER_WINDOW = 16 -- old `bmm22&` family: form + `mm` + one/two dimensions + suffix.
+local MATRIX_TRIGGER_WINDOW = 16 -- old `bmm.22&` family: form + `mm.` + one/two dimensions + suffix.
 local POSTFIX_TRIGGER_WINDOW = 160 -- compact prose/math/code token before `,,` or `;;`.
 local INLINE_MATH_SUFFIXES = { ",,", "，，" }
 local INLINE_CODE_SUFFIXES = { ";;", "；；" }
@@ -184,7 +184,7 @@ function M.simple_fraction_engine()
   end
 end
 
----Match the old simple matrix family: `bmm22&`, `pmm3&`, `mmm23&`.
+---Match the old simple matrix family: `bmm.22&`, `pmm.3&`, `mmm.23&`.
 ---
 ---This intentionally keeps only the fast, common behavior.  The old Python
 ---matrix helper also supported computed cells and many style flags; those are
@@ -197,7 +197,7 @@ function M.simple_matrix_engine()
     end
 
     local text = line_to_cursor:sub(math.max(1, #line_to_cursor - MATRIX_TRIGGER_WINDOW))
-    local form, rows, cols = text:match("([mpbBvV])mm([1-5])([1-5]?)&$")
+    local form, rows, cols = text:match("([mpbBvV])mm%.([1-5])([1-5]?)&$")
 
     if not form then
       return nil
