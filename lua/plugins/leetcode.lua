@@ -27,6 +27,95 @@ local function gen_checks(q)
   fn(q)
 end
 
+-- 出站代码清洗：把题解里的 `DBG(...)` 中和成 `(void)0`
+local DBG_QUERY = '(call_expression function: (identifier) @fn (#eq? @fn "DBG")) @call'
+
+---替换文本补回调用跨越的换行符，保证总行数不变
+---@param src string
+---@return string code, integer count
+local function rewrite_dbg_calls(src)
+  local query = vim.treesitter.query.parse("cpp", DBG_QUERY)
+  local root = vim.treesitter.get_string_parser(src, "cpp"):parse()[1]:root()
+
+  ---@type { start_byte: integer, end_byte: integer, rows: integer }[] 0-based 字节偏移，右开
+  local calls = {}
+  for id, node in query:iter_captures(root, src) do
+    if query.captures[id] == "call" then
+      local start_row, _, start_byte = node:start()
+      local end_row, _, end_byte = node:end_()
+      calls[#calls + 1] = { start_byte = start_byte, end_byte = end_byte, rows = end_row - start_row }
+    end
+  end
+  table.sort(calls, function(a, b)
+    return a.start_byte < b.start_byte
+  end)
+
+  -- 正向分段重建。跳过被前一区间包住的嵌套匹配（`DBG(DBG(x))`）
+  local chunks, prev_end, count = {}, 0, 0
+  for _, call in ipairs(calls) do
+    if call.start_byte >= prev_end then
+      chunks[#chunks + 1] = src:sub(prev_end + 1, call.start_byte)
+      chunks[#chunks + 1] = "(void)0" .. ("\n"):rep(call.rows)
+      prev_end = call.end_byte
+      count = count + 1
+    end
+  end
+  chunks[#chunks + 1] = src:sub(prev_end + 1)
+
+  return table.concat(chunks), count
+end
+
+---出错原样返回
+---@param src string
+---@return string code, integer count
+local function neutralize_dbg(src)
+  local ok, code, count = pcall(rewrite_dbg_calls, src)
+  if not ok then
+    return src, 0
+  end
+  return code, count
+end
+
+-- 出站清洗挂载点
+---@param q lc.ui.Question
+local function patch_outbound(q)
+  if q.lc_dbg_patched then
+    return
+  end
+  q.lc_dbg_patched = true
+
+  ---@param code string
+  ---@param label string
+  ---@return string code
+  local function sanitize(code, label)
+    if q.lang ~= "cpp" then
+      return code
+    end
+    local clean, n = neutralize_dbg(code)
+    if n > 0 then
+      vim.notify(("%s：已中和 %d 处 DBG"):format(label, n), vim.log.levels.INFO, { title = "leetcode" })
+    end
+    return clean
+  end
+
+  local editor_submit_lines = q.class.editor_submit_lines
+  q.editor_submit_lines = function(self, submit)
+    return sanitize(editor_submit_lines(self, submit), submit and "提交" or "样例测试")
+  end
+
+  q.editor_yank_code = function(self)
+    local code = sanitize(editor_submit_lines(self, true), "复制")
+    vim.fn.setreg('"', code, "l")
+    local clipboard = vim.opt.clipboard:get() ---@type string[]
+    if vim.tbl_contains(clipboard, "unnamedplus") then
+      vim.fn.setreg("+", code, "l")
+    end
+    if vim.tbl_contains(clipboard, "unnamed") then
+      vim.fn.setreg("*", code, "l")
+    end
+  end
+end
+
 return {
   {
     "kawre/leetcode.nvim",
@@ -68,7 +157,7 @@ return {
         },
       },
       hooks = {
-        ["question_enter"] = { gen_checks },
+        question_enter = { gen_checks, patch_outbound },
       },
     },
     config = function(_, opts)
