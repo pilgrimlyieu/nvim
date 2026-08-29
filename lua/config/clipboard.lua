@@ -1,5 +1,4 @@
-vim.opt.clipboard:append("unnamed")
-vim.opt.clipboard:append("unnamedplus")
+vim.opt.clipboard = "unnamedplus"
 if vim.fn.has("wsl") and not vim.g.vscode then
   vim.g.clipboard = {
     name = "OSC52",
