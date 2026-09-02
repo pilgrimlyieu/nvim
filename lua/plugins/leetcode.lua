@@ -278,41 +278,15 @@ return {
     end,
   },
   {
-    "zbirenbaum/copilot.lua",
-    cond = function()
-      return not is_leet_session()
-    end,
-  },
-  {
-    "CopilotC-Nvim/CopilotChat.nvim",
-    optional = true,
-    cond = function()
-      return not is_leet_session()
-    end,
-  },
-  {
-    "fang2hou/blink-copilot",
-    optional = true,
-    cond = function()
-      return not is_leet_session()
-    end,
-  },
-  {
-    "saghen/blink.cmp",
-    optional = true,
+    "neovim/nvim-lspconfig",
     opts = function(_, opts)
       if not is_leet_session() then
         return
       end
-      local default = vim.tbl_get(opts, "sources", "default")
-      if type(default) == "table" then
-        opts.sources.default = vim.tbl_filter(function(s)
-          return s ~= "copilot"
-        end, default)
-      end
-      if vim.tbl_get(opts, "sources", "providers", "copilot") then
-        opts.sources.providers.copilot = nil
-      end
+      opts.servers = opts.servers or {}
+      opts.servers.copilot = { enabled = false }
+
+      return opts
     end,
   },
 }

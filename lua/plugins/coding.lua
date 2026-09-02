@@ -1,18 +1,12 @@
 return {
   {
-    "zbirenbaum/copilot.lua",
-    optional = true,
-    event = function()
-      return { "InsertEnter" }
-    end,
-  },
-  {
     "folke/lazydev.nvim",
-    opts = function(_, opts)
-      -- Prefer jj.nvim's shipped annotations over a copied local type mirror.
-      opts.library = opts.library or {}
-      table.insert(opts.library, { path = "jj.nvim", words = { "jj%." } })
-    end,
+    ft = "lua",
+    opts = {
+      library = {
+        { path = "jj.nvim", words = { "jj%." } },
+      },
+    },
   },
   {
     "nvim-mini/mini.align",
