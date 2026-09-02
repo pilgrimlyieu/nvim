@@ -25,8 +25,8 @@ return {
         find_left = "SF",
         highlight = "Sh",
         replace = "Sr",
-        update_n_lines = "Sn",
       },
+      search_method = "cover_or_nearest",
     },
   },
 }

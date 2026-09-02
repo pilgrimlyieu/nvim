@@ -12,6 +12,32 @@ return {
         desc = "Flash Treesitter",
       },
     },
+    init = function()
+      local function flash_hl()
+        local function get(group, key)
+          return vim.api.nvim_get_hl(0, { name = group, link = false })[key]
+        end
+        local fg = get("Normal", "bg") or (vim.o.background == "dark" and 0x000000 or 0xffffff)
+        vim.api.nvim_set_hl(0, "FlashBackdrop", { bg = get("CursorLine", "bg") })
+        vim.api.nvim_set_hl(0, "FlashMatch", { fg = fg, bg = get("DiagnosticInfo", "fg") })
+        vim.api.nvim_set_hl(0, "FlashCurrent", { fg = fg, bg = get("DiagnosticWarn", "fg") })
+        vim.api.nvim_set_hl(0, "FlashLabel", { fg = fg, bg = get("DiagnosticError", "fg"), bold = true })
+      end
+
+      vim.api.nvim_create_autocmd("ColorScheme", { callback = flash_hl })
+      flash_hl()
+    end,
+    ---@type Flash.Config
+    opts = {
+      modes = {
+        search = {
+          enabled = true,
+        },
+        char = {
+          jump_labels = true,
+        },
+      },
+    },
   },
   {
     "rainzm/flash-zh.nvim",
