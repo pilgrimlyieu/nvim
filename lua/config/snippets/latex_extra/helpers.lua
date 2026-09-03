@@ -1,12 +1,11 @@
 ---Shared engines for the migrated low-frequency LaTeX snippets.
 ---
 ---This module contains reusable trigger engines and node builders only.  The
----public snippet groups live in `snippets.lua` and `autos.lua`, while
----`config.snippets.latex_extra` remains the compatibility facade used by the
----runtime snippet files.
+---public snippet groups live in snippets.lua and autos.lua.
 local ls = require("luasnip")
 local fmta = require("luasnip.extras.fmt").fmta
 local latex_helpers = require("config.snippets.latex.helpers")
+local conditions = require("config.snippets.conditions")
 local util = require("config.snippets.util")
 
 local s = ls.snippet
@@ -38,9 +37,6 @@ local SLASH_CYCLE_WINDOW = 140 -- command-cycle value, optional suffix, then `/`
 local INTEGRAL_TRIGGER_WINDOW = 24 -- compact `2nointx` / `oiiintt`-style triggers.
 local ACCENT_POSTFIX_WINDOW = 80 -- target, optional script, and `bar`/`hat`/`vec`.
 local ANGLE_CONTENT_WINDOW = 80 -- one-line `<content>` delimiter shorthand.
-local MAT_CALL_WINDOW = 32 -- `pmat(22)` / `bmat(3n)`-style calls.
-local INLINE_ENVIRONMENT_WINDOW = 300 -- one-line calculation environment body.
-local ENVIRONMENT_END_WINDOW = 48 -- `\end{latex_wolfram}` plus optional timeout.
 local BRACED_COMMAND_WINDOW = 180 -- command cycles that preserve one/two brace groups.
 local ANNOTATION_POSTFIX_WINDOW = 80 -- label plus `%^` / `%_` annotation suffix.
 local SYMBOLIC_MATRIX_WINDOW = 24 -- symbolic matrix shorthands ending in `.`.
@@ -49,12 +45,9 @@ local cap = util.capture_nonempty
 local choose_next = util.choose_next
 local escape_lua_pattern = util.escape_lua_pattern
 local cycle_engine = util.exact_cycle_engine
-local literal = util.literal_snippet
 local sorted_longest_first = util.sorted_longest_first
 local visual_insert = util.visual_insert
-local with_condition = util.with_condition
-local matrix_env = latex_helpers.matrix_env
-local matrix_nodes = latex_helpers.matrix_nodes
+local with_condition = conditions.with_condition
 local matrix_text_lines = latex_helpers.matrix_text_lines
 
 ---@param text string
@@ -74,25 +67,6 @@ local function ends_with_any(text, suffixes)
     end
   end
   return false
-end
-
----@param text string
----@param marker string
----@param allow_digits boolean
----@return boolean
-local function ends_with_marker(text, marker, allow_digits)
-  if ends_with(text, marker) then
-    return true
-  end
-  if not allow_digits then
-    return false
-  end
-
-  local index = #text
-  while index > 0 and text:sub(index, index):match("%d") do
-    index = index - 1
-  end
-  return index < #text and text:sub(index - #marker + 1, index) == marker
 end
 
 ---Match any value at the cursor and preserve trailing whitespace.
@@ -151,10 +125,9 @@ end
 ---Build an autosnippet that cycles slash-triggered command variants.
 ---@param name string
 ---@param values string[]
----@param condition SnipCondition
 ---@param suffix_pattern? string
 ---@return SnipNode
-local function slash_cycle_autosnippet(name, values, condition, suffix_pattern)
+local function slash_cycle_autosnippet(name, values, suffix_pattern)
   return s(
     with_condition({
       trig = name,
@@ -163,7 +136,7 @@ local function slash_cycle_autosnippet(name, values, condition, suffix_pattern)
       name = name,
       snippetType = "autosnippet",
       priority = 1500,
-    }, condition),
+    }, conditions.math),
     {
       f(function(_, snip)
         return choose_next(snip.captures[1], values) .. (snip.captures[2] or "")
@@ -297,207 +270,18 @@ local function angle_content_engine()
   end
 end
 
----Match `pmat(22)`-style matrix calls and capture form and dimensions.
----@return SnipTriggerEngine
-local function mat_call_engine()
-  return function()
-    return function(line_to_cursor)
-      if not ends_with(line_to_cursor, ")") then
-        return nil
-      end
-
-      local text = line_to_cursor:sub(math.max(1, #line_to_cursor - MAT_CALL_WINDOW))
-      local match, form, spec = text:match("(([pbBvV])mat%(([1-9][1-9]?[%a]*)%))$")
-      if not match then
-        return nil
-      end
-
-      local rows, cols = spec:match("^([1-9])([1-9])")
-      rows = rows or spec:match("^([1-9])")
-      cols = cols or rows
-      return match, { form, rows, cols }
-    end
-  end
-end
-
----Run an external command as a stdin/stdout filter with timeout.
----@param command string[]
----@param input string
----@param timeout_ms integer
----@return string?
-local function run_filter(command, input, timeout_ms)
-  if not vim.system then
-    return nil
-  end
-
-  local ok, result = pcall(function()
-    return vim.system(command, { stdin = input, text = true }):wait(timeout_ms)
-  end)
-  if not ok or not result or result.code ~= 0 then
-    return nil
-  end
-
-  local stdout = result.stdout or ""
-  return (stdout:gsub("%s+$", ""))
-end
-
----Evaluate a small SymPy body and return rendered LaTeX.
----@param text string
----@return string?
-local function eval_sympy(text)
-  local script = [=[
-from re import sub
-from sys import stdin
-from sympy import *
-from sympy import latex
-
-def pre_process_text(text):
-    return text.replace('\\', '').replace('^', '**').replace('{', '(').replace('}', ')')
-
-def process_latex(text):
-    return sub(r'(\s|\W?)e(?=\W)', r'\g<1>\\e', text).replace(r'\, d', r'\d ')
-
-x, y, z, t = symbols('x y z t')
-k, m, n = symbols('k m n', integer=True)
-f, g, h = symbols('f g h', cls=Function)
-rv = None
-exec(pre_process_text(stdin.read()))
-print(process_latex(latex(rv or "")))
-]=]
-  return run_filter({ "python", "-c", script }, text, 10000)
-end
-
----Evaluate WolframScript input and return rendered TeXForm text.
----@param text string
----@param from_latex boolean
----@param timeout string?
----@return string?
-local function eval_wolfram(text, from_latex, timeout)
-  local code
-  if from_latex then
-    local latex = (text:gsub([[\e]], " e"):gsub([[\d ]], [[\, d]]):gsub("\\", "\\\\"))
-    code = ('ToString[ToExpression["%s", TeXForm], TeXForm]'):format(latex)
-  else
-    code = ("ToString[%s, TeXForm]"):format((text:gsub("\n", ";")))
-  end
-
-  local result = run_filter({ "wolframscript", "-code", code }, "", (tonumber(timeout) or 10) * 1000)
-  if not result or result == "" then
-    return nil
-  end
-
-  return (result:gsub("([%s%W]?)e(%W)", "%1\\e%2"):gsub([[\, d]], [[\d ]]))
-end
-
----Match an inline calculation environment with body on the same line.
----@param env string
----@param timeout? boolean
----@return SnipTriggerEngine
-local function inline_environment_engine(env, timeout)
-  local end_marker = [[\end{]] .. env .. "}"
-
-  return function()
-    return function(line_to_cursor)
-      if not ends_with_marker(line_to_cursor, end_marker, timeout == true) then
-        return nil
-      end
-
-      local text = line_to_cursor:sub(math.max(1, #line_to_cursor - INLINE_ENVIRONMENT_WINDOW))
-      local pattern = "(\\begin{" .. env .. "} (.-) \\end{" .. env .. "}" .. (timeout and "(%d*)" or "") .. ")$"
-      local match, body, timeout_value = text:match(pattern)
-      if match then
-        return match, { body, timeout_value or "" }
-      end
-      return nil
-    end
-  end
-end
-
----Match an environment end marker used to evaluate a preceding block body.
----@param env string
----@param timeout? boolean
----@return SnipTriggerEngine
-local function environment_end_engine(env, timeout)
-  local end_marker = [[\end{]] .. env .. "}"
-
-  return function()
-    return function(line_to_cursor)
-      if not ends_with_marker(line_to_cursor, end_marker, timeout == true) then
-        return nil
-      end
-
-      local text = line_to_cursor:sub(math.max(1, #line_to_cursor - ENVIRONMENT_END_WINDOW))
-      local pattern = "(\\end{" .. env .. "}" .. (timeout and "(%d*)" or "") .. ")$"
-      local match, timeout_value = text:match(pattern)
-      if match then
-        return match, { timeout_value or "" }
-      end
-      return nil
-    end
-  end
-end
-
----Replace a completed calculation environment with evaluator output.
----@param env string
----@param evaluator fun(body: string, timeout: string?): string?
----@return SnipNode
-local function environment_eval_node(env, evaluator)
-  return f(function(_, snip)
-    local bufnr = vim.api.nvim_get_current_buf()
-    local row = vim.api.nvim_win_get_cursor(0)[1] - 1
-    local timeout = snip.captures[1] or ""
-
-    vim.schedule(function()
-      if not vim.api.nvim_buf_is_valid(bufnr) then
-        return
-      end
-
-      local lines = vim.api.nvim_buf_get_lines(bufnr, 0, row + 1, false)
-      local start
-      for index = row + 1, 1, -1 do
-        if (lines[index] or ""):match("^%s*\\begin{" .. env .. "}%s*$") then
-          start = index - 1
-          break
-        end
-      end
-
-      if not start then
-        vim.api.nvim_buf_set_lines(bufnr, row, row + 1, false, { "\\end{" .. env .. "}" .. timeout })
-        return
-      end
-
-      local body_lines = vim.list_slice(lines, start + 2, row)
-      local body = table.concat(body_lines, "\n")
-      local result = evaluator(body, timeout)
-
-      if result and result ~= "" then
-        vim.api.nvim_buf_set_lines(bufnr, start, row + 1, false, { result })
-      else
-        vim.api.nvim_buf_set_lines(bufnr, row, row + 1, false, { "\\end{" .. env .. "}" .. timeout })
-      end
-    end)
-
-    return ""
-  end)
-end
-
 ---Build a snippet that cycles exact command spellings in place.
 ---@param name string
 ---@param values string[]
----@param condition SnipCondition
----@param extra? SnipContextExtra
 ---@return SnipNode
-local function cycle(name, values, condition, extra)
+local function cycle(name, values)
   return s(
-    with_condition(
-      util.extend({
-        trig = name,
-        trigEngine = cycle_engine(values),
-        wordTrig = false,
-        name = name,
-      }, extra),
-      condition
-    ),
+    with_condition({
+      trig = name,
+      trigEngine = cycle_engine(values),
+      wordTrig = false,
+      name = name,
+    }, conditions.math),
     {
       f(function(_, snip)
         return choose_next(snip.captures[1], values)
@@ -510,9 +294,8 @@ end
 ---@param name string
 ---@param commands string[]
 ---@param brace_count integer
----@param condition SnipCondition
 ---@return SnipNode
-local function braced_command_cycle(name, commands, brace_count, condition)
+local function braced_command_cycle(name, commands, brace_count)
   local match_commands = sorted_longest_first(commands)
 
   local function command_pattern(command)
@@ -533,7 +316,7 @@ local function braced_command_cycle(name, commands, brace_count, condition)
           for _, command in ipairs(match_commands) do
             local target = text:match("(" .. command_pattern(command) .. ")$")
             if target then
-              return target, { target }
+              return target, { target, command }
             end
           end
           return nil
@@ -541,16 +324,12 @@ local function braced_command_cycle(name, commands, brace_count, condition)
       end,
       wordTrig = false,
       name = name,
-    }, condition),
+    }, conditions.math),
     {
       f(function(_, snip)
         local target = snip.captures[1] or ""
-        for index, command in ipairs(commands) do
-          if target:sub(1, #command) == command then
-            return commands[index % #commands + 1] .. target:sub(#command + 1)
-          end
-        end
-        return target
+        local command = snip.captures[2]
+        return command and choose_next(command, commands) .. target:sub(#command + 1) or target
       end),
     }
   )
@@ -562,9 +341,8 @@ end
 ---@param suffix_text string
 ---@param command string
 ---@param marker string
----@param condition SnipCondition
 ---@return SnipNode
-local function annotation_autosnippet(name, suffix_pattern, suffix_text, command, marker, condition)
+local function annotation_autosnippet(name, suffix_pattern, suffix_text, command, marker)
   return s(
     with_condition({
       trig = name,
@@ -585,7 +363,7 @@ local function annotation_autosnippet(name, suffix_pattern, suffix_text, command
       wordTrig = false,
       name = name,
       snippetType = "autosnippet",
-    }, condition),
+    }, conditions.math),
     fmta(command .. [[{<>}]] .. marker .. [[{<>}]], { visual_insert(1), cap(1) })
   )
 end
@@ -620,13 +398,13 @@ local function symbolic_matrix_engine(kind)
         return form .. row .. col .. value .. ".", { form, row, col, value ~= "" and value or "a" }
       end
 
-      form, row, value =
-        text:match((kind == "diag" and "d" or kind == "upper" and "ut" or "lt") .. "([mpbBvV])([%a])([%a]?)%.$")
+      local prefix = (kind == "diag" and "d" or kind == "upper" and "ut" or "lt")
+      form, row, value = text:match(prefix .. "([mpbBvV])([%a])([%a]?)%.$")
       if not form then
         return nil
       end
 
-      local match = (kind == "diag" and "d" or kind == "upper" and "ut" or "lt") .. form .. row .. value .. "."
+      local match = prefix .. form .. row .. value .. "."
       return match, { form, row, value ~= "" and value or "a" }
     end
   end
@@ -728,30 +506,15 @@ local function roman(number)
 end
 
 return {
-  with_condition = with_condition,
-  cap = cap,
-  visual_insert = visual_insert,
-  literal = literal,
-  cycle_engine = cycle_engine,
-  choose_next = choose_next,
   suffix_cycle_engine = suffix_cycle_engine,
   slash_cycle_autosnippet = slash_cycle_autosnippet,
   integral_engine = integral_engine,
   accent_postfix_engine = accent_postfix_engine,
   accented_postfix = accented_postfix,
   angle_content_engine = angle_content_engine,
-  mat_call_engine = mat_call_engine,
-  eval_sympy = eval_sympy,
-  eval_wolfram = eval_wolfram,
-  inline_environment_engine = inline_environment_engine,
-  environment_end_engine = environment_end_engine,
-  environment_eval_node = environment_eval_node,
   cycle = cycle,
   braced_command_cycle = braced_command_cycle,
   annotation_autosnippet = annotation_autosnippet,
-  matrix_env = matrix_env,
-  matrix_nodes = matrix_nodes,
-  indexed = indexed,
   symbolic_matrix_engine = symbolic_matrix_engine,
   symbolic_matrix_node = symbolic_matrix_node,
   roman = roman,

@@ -1,7 +1,30 @@
 return {
   {
     "MeanderingProgrammer/render-markdown.nvim",
-    enabled = false,
+    lazy = true,
+    -- Replace LazyVim's FileType triggers so opening a note does not load it.
+    ft = function()
+      return {}
+    end,
+    cmd = { "RenderMarkdown" },
+    keys = {
+      {
+        "<leader>um",
+        function()
+          require("render-markdown").toggle()
+        end,
+        desc = "Toggle Render Markdown",
+        ft = "markdown",
+      },
+    },
+    opts = {
+      enabled = false,
+      file_types = { "markdown", "norg", "rmd", "org", "codecompanion" },
+      -- The plugin's throttle can drop a toggle-off immediately after an edit.
+      debounce = 0,
+      -- Converting each formula spawns an external process and blocks edits.
+      latex = { enabled = false },
+    },
   },
   -- Replaced by the fork below. It needs a lazy.nvim name of its own for this
   -- to work: sharing `markdown-preview.nvim` merges the two specs into one, and

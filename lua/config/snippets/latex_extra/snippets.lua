@@ -11,93 +11,30 @@ local h = require("config.snippets.latex_extra.helpers")
 local util = require("config.snippets.util")
 
 local s = ls.snippet
-local sn = ls.snippet_node
 local t = ls.text_node
 local i = ls.insert_node
 local f = ls.function_node
-local d = ls.dynamic_node
 
-local with_condition = h.with_condition
-local cap = h.cap
-local literal = h.literal
-local choose_next = h.choose_next
+local with_condition = conditions.with_condition
+local cap = util.capture_nonempty
+local literal = util.literal_snippet
+local choose_next = util.choose_next
 local suffix_cycle_engine = h.suffix_cycle_engine
 local integral_engine = h.integral_engine
 local angle_content_engine = h.angle_content_engine
-local mat_call_engine = h.mat_call_engine
-local eval_sympy = h.eval_sympy
-local eval_wolfram = h.eval_wolfram
-local inline_environment_engine = h.inline_environment_engine
-local environment_end_engine = h.environment_end_engine
-local environment_eval_node = h.environment_eval_node
 local cycle = h.cycle
 local braced_command_cycle = h.braced_command_cycle
-local matrix_nodes = h.matrix_nodes
 local symbolic_matrix_engine = h.symbolic_matrix_engine
 local symbolic_matrix_node = h.symbolic_matrix_node
 local roman = h.roman
-local visual_insert = h.visual_insert
+local visual_insert = util.visual_insert
 
 local M = {}
 
----Return a condition for snippets that are inline in inline math and line-begin in display math.
----
----Layout conditions stay separate from the general math condition because they
----only describe inline/display placement.
----@param condition SnipCondition
----@param contexts? SnipMathContexts
----@return SnipCondition
-local function inline_or_display_line_condition(condition, contexts)
-  if contexts and contexts.inline and contexts.display then
-    return util.or_conditions(contexts.inline, util.with_line_begin(contexts.display))
-  end
-  return condition
-end
-
----Return the condition used by inline-only evaluator snippets.
----@param condition SnipCondition
----@param contexts? SnipMathContexts
----@return SnipCondition
-local function inline_condition(condition, contexts)
-  return contexts and contexts.inline or condition
-end
-
----Return the condition used by display-line evaluator snippets.
----@param condition SnipCondition
----@param contexts? SnipMathContexts
----@return SnipCondition
-local function display_line_condition(condition, contexts)
-  return util.with_line_begin(contexts and contexts.display or condition)
-end
-
----Return the condition used by display-only snippets.
----@param condition SnipCondition
----@param contexts? SnipMathContexts
----@return SnipCondition
-local function display_condition(condition, contexts)
-  return contexts and contexts.display or condition
-end
-
----Build a calculation environment that stays inline inside inline math.
----@param env string
----@return fun(args: SnipNodeArgs, snip: SnipSnippet): SnipNode
-local function calculation_environment_node(env)
-  return function(_, snip)
-    local selected = util.selected_text(snip)
-
-    if conditions.vimtex_inline_layout() == true then
-      return sn(nil, { t("\\begin{" .. env .. "} "), i(1, selected), t(" \\end{" .. env .. "}"), i(0) })
-    end
-
-    return sn(nil, { t({ "\\begin{" .. env .. "}", "" }), i(1, selected), t({ "", "\\end{" .. env .. "}" }), i(0) })
-  end
-end
-
 ---Return low-frequency manual LaTeX math snippets.
----@param condition SnipCondition
----@param contexts? SnipMathContexts
 ---@return SnipNode[]
-function M.math_snippets(condition, contexts)
+function M.math_snippets()
+  local condition = conditions.math
   local snippets = {
     s(
       with_condition({ trig = ",i=", name = "given i", wordTrig = false }, condition),
@@ -247,7 +184,7 @@ function M.math_snippets(condition, contexts)
     literal("tes", [[\textstyle ]], "text style", condition),
     literal("lts", [[\limits]], "limits", condition, { wordTrig = false }),
     s(
-      with_condition({ trig = "cbox", name = "theorem box" }, display_condition(condition, contexts)),
+      with_condition({ trig = "cbox", name = "theorem box" }, conditions.display_math),
       fmta([[\fcolorbox{#FF69B4}{trasparent}{$<>$}<>]], { visual_insert(1), i(0) })
     ),
     s(
@@ -273,115 +210,6 @@ function M.math_snippets(condition, contexts)
         return result and "\\mathrm{" .. result .. "}" or snip.captures[1]
       end),
     }),
-
-    s(
-      with_condition({ trig = "sym", name = "SymPy block" }, inline_or_display_line_condition(condition, contexts)),
-      { d(1, calculation_environment_node("sympy")) }
-    ),
-    s(
-      with_condition(
-        { trig = "wlf", name = "WolframScript block" },
-        inline_or_display_line_condition(condition, contexts)
-      ),
-      { d(1, calculation_environment_node("wolfram")) }
-    ),
-    s(
-      with_condition(
-        { trig = [[\sym]], name = "LaTeX SymPy block", wordTrig = false },
-        inline_or_display_line_condition(condition, contexts)
-      ),
-      { d(1, calculation_environment_node("latex_sympy")) }
-    ),
-    s(
-      with_condition(
-        { trig = [[\wlf]], name = "LaTeX WolframScript block", wordTrig = false },
-        inline_or_display_line_condition(condition, contexts)
-      ),
-      { d(1, calculation_environment_node("latex_wolfram")) }
-    ),
-    s(
-      with_condition({
-        trig = "inline-sympy-eval",
-        trigEngine = inline_environment_engine("sympy"),
-        wordTrig = false,
-        name = "evaluate inline SymPy block",
-      }, inline_condition(condition, contexts)),
-      {
-        f(function(_, snip)
-          local body = snip.captures[1] or ""
-          return eval_sympy(body) or ([[\begin{sympy} ]] .. body .. [[ \end{sympy}]])
-        end),
-      }
-    ),
-    s(
-      with_condition({
-        trig = "inline-wolfram-eval",
-        trigEngine = inline_environment_engine("wolfram", true),
-        wordTrig = false,
-        name = "evaluate inline Wolfram block",
-      }, inline_condition(condition, contexts)),
-      {
-        f(function(_, snip)
-          local body = snip.captures[1] or ""
-          local suffix = snip.captures[2] or ""
-          return eval_wolfram(body, false, suffix) or ([[\begin{wolfram} ]] .. body .. [[ \end{wolfram}]] .. suffix)
-        end),
-      }
-    ),
-    s(
-      with_condition({
-        trig = "inline-latex-wolfram-eval",
-        trigEngine = inline_environment_engine("latex_wolfram", true),
-        wordTrig = false,
-        name = "evaluate inline LaTeX Wolfram block",
-      }, inline_condition(condition, contexts)),
-      {
-        f(function(_, snip)
-          local body = snip.captures[1] or ""
-          local suffix = snip.captures[2] or ""
-          return eval_wolfram(body, true, suffix)
-            or ([[\begin{latex_wolfram} ]] .. body .. [[ \end{latex_wolfram}]] .. suffix)
-        end),
-      }
-    ),
-    s(
-      with_condition({
-        trig = [[\end{sympy}]],
-        wordTrig = false,
-        name = "evaluate SymPy environment",
-      }, display_line_condition(condition, contexts)),
-      {
-        environment_eval_node("sympy", function(body)
-          return eval_sympy(body)
-        end),
-      }
-    ),
-    s(
-      with_condition({
-        trig = "wolfram-end-eval",
-        trigEngine = environment_end_engine("wolfram", true),
-        wordTrig = false,
-        name = "evaluate Wolfram environment",
-      }, display_line_condition(condition, contexts)),
-      {
-        environment_eval_node("wolfram", function(body, timeout)
-          return eval_wolfram(body, false, timeout)
-        end),
-      }
-    ),
-    s(
-      with_condition({
-        trig = "latex-wolfram-end-eval",
-        trigEngine = environment_end_engine("latex_wolfram", true),
-        wordTrig = false,
-        name = "evaluate LaTeX Wolfram environment",
-      }, display_line_condition(condition, contexts)),
-      {
-        environment_eval_node("latex_wolfram", function(body, timeout)
-          return eval_wolfram(body, true, timeout)
-        end),
-      }
-    ),
 
     s(
       with_condition({
@@ -425,22 +253,6 @@ function M.math_snippets(condition, contexts)
         condition
       ),
       fmta([[\bm{<>}]], { cap(1) })
-    ),
-    s(
-      with_condition({
-        trig = "matrix-call",
-        trigEngine = mat_call_engine(),
-        wordTrig = false,
-        name = "matrix call",
-      }, condition),
-      {
-        d(1, function(_, snip)
-          local form = snip.captures[1] or "p"
-          local rows = tonumber(snip.captures[2]) or 2
-          local cols = tonumber(snip.captures[3]) or rows
-          return sn(nil, matrix_nodes(form, rows, cols))
-        end),
-      }
     ),
   }
 
@@ -499,7 +311,7 @@ function M.math_snippets(condition, contexts)
   }
 
   for _, item in ipairs(cycle_snippets) do
-    snippets[#snippets + 1] = cycle(item[1], item[2], condition)
+    snippets[#snippets + 1] = cycle(item[1], item[2])
   end
 
   snippets[#snippets + 1] = s(
@@ -517,16 +329,15 @@ function M.math_snippets(condition, contexts)
     }
   )
 
-  snippets[#snippets + 1] = braced_command_cycle("frac display cycle", { [[\frac]], [[\dfrac]] }, 2, condition)
-  snippets[#snippets + 1] = braced_command_cycle("binom display cycle", { [[\binom]], [[\dbinom]] }, 2, condition)
+  snippets[#snippets + 1] = braced_command_cycle("frac display cycle", { [[\frac]], [[\dfrac]] }, 2)
+  snippets[#snippets + 1] = braced_command_cycle("binom display cycle", { [[\binom]], [[\dbinom]] }, 2)
+  snippets[#snippets + 1] = braced_command_cycle("operator star cycle", { [[\operatorname]], [[\operatorname*]] }, 1)
   snippets[#snippets + 1] =
-    braced_command_cycle("operator star cycle", { [[\operatorname]], [[\operatorname*]] }, 1, condition)
-  snippets[#snippets + 1] =
-    braced_command_cycle("cancel command cycle", { [[\cancel]], [[\bcancel]], [[\xcancel]], [[\sout]] }, 1, condition)
-  snippets[#snippets + 1] = braced_command_cycle("bar command cycle", { [[\bar]], [[\overline]] }, 1, condition)
-  snippets[#snippets + 1] = braced_command_cycle("hat command cycle", { [[\hat]], [[\widehat]] }, 1, condition)
-  snippets[#snippets + 1] = braced_command_cycle("vec command cycle", { [[\vec]], [[\overrightarrow]] }, 1, condition)
-  snippets[#snippets + 1] = braced_command_cycle("phantom command cycle", { [[\phantom]], [[\hphantom]] }, 1, condition)
+    braced_command_cycle("cancel command cycle", { [[\cancel]], [[\bcancel]], [[\xcancel]], [[\sout]] }, 1)
+  snippets[#snippets + 1] = braced_command_cycle("bar command cycle", { [[\bar]], [[\overline]] }, 1)
+  snippets[#snippets + 1] = braced_command_cycle("hat command cycle", { [[\hat]], [[\widehat]] }, 1)
+  snippets[#snippets + 1] = braced_command_cycle("vec command cycle", { [[\vec]], [[\overrightarrow]] }, 1)
+  snippets[#snippets + 1] = braced_command_cycle("phantom command cycle", { [[\phantom]], [[\hphantom]] }, 1)
 
   return snippets
 end

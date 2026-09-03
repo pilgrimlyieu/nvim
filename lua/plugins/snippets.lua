@@ -247,8 +247,12 @@ end
 local function reload_snippets()
   local luasnip = require("luasnip")
 
-  require("config.snippets.groups").refresh()
   luasnip.cleanup()
+  for name in pairs(package.loaded) do
+    if name:match("^config%.snippets%.") then
+      package.loaded[name] = nil
+    end
+  end
   load_project_snippets()
 
   vim.notify("LuaSnip snippets reloaded", vim.log.levels.INFO, { title = "LuaSnip" })
@@ -384,87 +388,19 @@ local function setup_choice_hint()
   })
 end
 
----Run autosnippet expansion only where it can plausibly match.
+---Expand autosnippets on typed characters in normal file buffers.
+---
+---LuaSnip's own `enable_autosnippets` is off so that expansion never runs in
+---special buffers or on whitespace.  Scope filtering happens inside each
+---snippet's condition via `config.snippets.conditions`.
 local function setup_guarded_autosnippets()
   local group = vim.api.nvim_create_augroup("config_luasnip_autosnippets", { clear = true })
-
-  local markdown_math_trigger_chars = {}
-  for char in ([[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\/=<>!.-+:|~,_'^)}]&]]):gmatch(".") do
-    markdown_math_trigger_chars[char] = true
-  end
-
-  local function ends_with(text, suffix)
-    return suffix ~= "" and text:sub(-#suffix) == suffix
-  end
-
-  local function is_ascii_word_char(char)
-    return char:match("^[A-Za-z0-9_]$") ~= nil
-  end
-
-  local function line_to_cursor_after_char(char)
-    local cursor = vim.api.nvim_win_get_cursor(0)
-    local line = vim.api.nvim_get_current_line()
-    return line:sub(1, cursor[2]) .. char
-  end
-
-  local function markdown_text_autosnippet_candidate(text, char)
-    if char == "m" then
-      if text:match("^%s*dm$") then
-        return true
-      end
-
-      if ends_with(text, "lm") then
-        local before = text:sub(1, #text - 2)
-        local prefix = vim.fn.strcharpart(before, math.max(vim.fn.strchars(before) - 1, 0), 1)
-        return prefix == "" or not is_ascii_word_char(prefix)
-      end
-    end
-
-    if char == "," or char == "，" then
-      return ends_with(text, ",,") or ends_with(text, "，，")
-    end
-
-    if char == ";" or char == "；" then
-      return ends_with(text, ";;") or ends_with(text, "；；")
-    end
-
-    if char == "@" then
-      return text:match("^%s*@$") ~= nil and vim.api.nvim_win_get_cursor(0)[1] <= 2
-    end
-
-    return false
-  end
-
-  local function should_enable(buf)
-    return vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].buftype == ""
-  end
-
-  local function should_expand_auto(buf)
-    local char = vim.v.char or ""
-    if char == "" or char:match("%s") then
-      return false
-    end
-
-    if vim.bo[buf].filetype ~= "markdown" then
-      return true
-    end
-
-    local text = line_to_cursor_after_char(char)
-    if markdown_text_autosnippet_candidate(text, char) then
-      return true
-    end
-
-    if not markdown_math_trigger_chars[char] then
-      return false
-    end
-
-    return require("config.snippets.conditions").markdown_latex_math_show()
-  end
 
   vim.api.nvim_create_autocmd("InsertCharPre", {
     group = group,
     callback = function(args)
-      if not should_enable(args.buf) or not should_expand_auto(args.buf) then
+      local char = vim.v.char or ""
+      if char == "" or char:match("%s") or vim.bo[args.buf].buftype ~= "" then
         return
       end
 
@@ -572,22 +508,16 @@ return {
     ---@param opts ConfigBlinkCmpOpts
     ---@return ConfigBlinkCmpOpts
     opts = function(_, opts)
-      local sources = opts.sources or {}
-      opts.sources = sources
+      opts.sources = vim.tbl_deep_extend("force", opts.sources, {
+        providers = {
+          snippets = {
+            opts = {
+              show_autosnippets = false,
+            },
+          },
+        },
+      })
 
-      local providers = sources.providers or {}
-      sources.providers = providers
-
-      local snippets_provider = providers.snippets or {}
-      providers.snippets = snippets_provider
-
-      snippets_provider.opts = snippets_provider.opts or {}
-
-      -- Autosnippets such as `lm`, `dm`, and `1/` should feel like UltiSnips
-      -- `A` triggers: they expand while typing, not as noisy completion rows.
-      local luasnip_opts = snippets_provider.opts
-      luasnip_opts.show_autosnippets = false
-      luasnip_opts.use_show_condition = true
       return opts
     end,
   },

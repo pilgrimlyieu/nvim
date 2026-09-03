@@ -1,12 +1,10 @@
 ---Typst text-mode snippets.
-local groups = require("config.snippets.groups").values
+local enabled = require("config.snippets.groups")
 
-if not groups.typst_text then
+if not enabled("typst_text") then
   return {}, {}
 end
 
-local conditions = require("config.snippets.conditions")
 local typst = require("config.snippets.typst")
-local text = conditions.wrap(conditions.typst_text)
 
-return typst.text_snippets(text), typst.text_autosnippets(text)
+return typst.text_snippets(), typst.text_autosnippets()

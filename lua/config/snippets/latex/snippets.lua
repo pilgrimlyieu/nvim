@@ -5,6 +5,7 @@ local nodes = require("config.snippets.nodes")
 local symbols = require("config.snippets.symbols")
 local triggers = require("config.snippets.triggers")
 local h = require("config.snippets.latex.helpers")
+local conditions = require("config.snippets.conditions")
 local util = require("config.snippets.util")
 
 local s = ls.snippet
@@ -13,12 +14,12 @@ local i = ls.insert_node
 local f = ls.function_node
 local d = ls.dynamic_node
 
-local with_condition = h.with_condition
-local literal_snippet = h.literal_snippet
-local cap = h.cap
-local captured_insert = h.captured_insert
+local with_condition = conditions.with_condition
+local literal_snippet = util.literal_snippet
+local cap = util.capture
+local captured_insert = util.captured_insert
 local matching_right_delimiter = h.matching_right_delimiter
-local visual_insert = h.visual_insert
+local visual_insert = util.visual_insert
 local environment_node = h.environment_node
 local math_environment_node = h.math_environment_node
 local matrix_node = h.matrix_node
@@ -26,33 +27,13 @@ local style_snippet = h.style_snippet
 
 local M = {}
 
----@param fallback SnipCondition
----@param contexts SnipMathContexts?
----@param key "not_chem"|"not_unit"|"pure"|"chem"
----@return SnipCondition
-local function context_or(fallback, contexts, key)
-  return contexts and contexts[key] or fallback
-end
-
----@param fallback SnipCondition
----@param contexts SnipMathContexts?
----@return SnipCondition
-local function inline_or_display_condition(fallback, contexts)
-  if contexts and contexts.inline and contexts.display then
-    return util.or_conditions(contexts.inline, contexts.display)
-  end
-  return fallback
-end
-
 ---Return high-frequency manual LaTeX math snippets.
----@param condition SnipCondition
----@param contexts? SnipMathContexts
 ---@return SnipNode[]
-function M.math_snippets(condition, contexts)
-  local layout_condition = inline_or_display_condition(condition, contexts)
-  local not_chem_condition = context_or(condition, contexts, "not_chem")
-  local not_unit_condition = context_or(condition, contexts, "not_unit")
-  local chem_condition = context_or(condition, contexts, "chem")
+function M.math_snippets()
+  local condition = conditions.math
+  local not_chem_condition = conditions.not_chem
+  local not_unit_condition = conditions.not_unit
+  local chem_condition = conditions.chem
 
   local snippets = {
     s(
@@ -116,14 +97,14 @@ function M.math_snippets(condition, contexts)
       with_condition({ trig = "nint", name = "indefinite integral" }, condition),
       fmta([[\int <> \d <>]], { visual_insert(1), i(2, "x") })
     ),
-    s(with_condition({ trig = "env", name = "environment" }, layout_condition), { d(1, environment_node(false)) }),
-    s(with_condition({ trig = "envo", name = "environment with option" }, layout_condition), { d(1, environment_node(true)) }),
+    s(with_condition({ trig = "env", name = "environment" }, condition), { d(1, environment_node(false)) }),
+    s(with_condition({ trig = "envo", name = "environment with option" }, condition), { d(1, environment_node(true)) }),
     s(
-      with_condition({ trig = "case", name = "left brace aligned" }, layout_condition),
+      with_condition({ trig = "case", name = "left brace aligned" }, condition),
       { d(1, math_environment_node("case")) }
     ),
-    s(with_condition({ trig = "cases", name = "cases" }, layout_condition), { d(1, math_environment_node("cases")) }),
-    s(with_condition({ trig = "align", name = "aligned" }, layout_condition), { d(1, math_environment_node("align")) }),
+    s(with_condition({ trig = "cases", name = "cases" }, condition), { d(1, math_environment_node("cases")) }),
+    s(with_condition({ trig = "align", name = "aligned" }, condition), { d(1, math_environment_node("align")) }),
     s(with_condition({ trig = "txt", name = "text" }, condition), fmta([[\text{<>}]], { visual_insert(1) })),
     s(with_condition({ trig = "text", name = "text" }, condition), fmta([[\text{<>}]], { visual_insert(1) })),
     s(with_condition({ trig = "tt", name = "text" }, condition), fmta([[\text{<>}]], { visual_insert(1) })),
@@ -168,17 +149,6 @@ function M.math_snippets(condition, contexts)
     s(
       with_condition({ trig = "floor", name = "floor" }, condition),
       fmta([[\left\lfloor <> \right\rfloor]], { visual_insert(1) })
-    ),
-    s(
-      with_condition({ trig = "mat([2-5])([2-5])", trigEngine = "pattern", name = "matrix" }, condition),
-      { d(1, matrix_node) }
-    ),
-    s(
-      with_condition(
-        { trig = "([pbBvV])mat([2-5])([2-5])", trigEngine = "pattern", name = "delimited matrix" },
-        condition
-      ),
-      { d(1, matrix_node) }
     ),
     s(
       with_condition({
@@ -249,7 +219,7 @@ function M.math_snippets(condition, contexts)
 
   for _, def in ipairs(symbols.math_styles) do
     if def.latex then
-      vim.list_extend(snippets, style_snippet(def.trigger, def.latex, def.desc, condition))
+      vim.list_extend(snippets, style_snippet(def.trigger, def.latex, def.desc))
     end
   end
 

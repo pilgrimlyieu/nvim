@@ -1,11 +1,20 @@
----Markdown text snippets.
+---Markdown prose snippets: text helpers, `alpha` -> `$\alpha$` shortcuts,
+---KaTeX macro references, callouts, and blog front matter.
 ---
----This group contains prose-level helpers only.  LaTeX math snippets live in
----`markdown/latex_math.lua` so the math context can be tuned independently.
-local conditions = require("config.snippets.conditions")
+---LaTeX math snippets live in `latex_math.lua` so they can share the
+---math-scope conditions with TeX buffers.
 local markdown = require("config.snippets.markdown")
 
-local text = conditions.wrap(conditions.markdown_latex_text, conditions.markdown_latex_text_show)
-local snippets = markdown.snippets(text)
+local snippets = {}
 
-return snippets, markdown.autosnippets(text)
+for _, build in ipairs({
+  markdown.snippets,
+  markdown.short_math_snippets,
+  markdown.reference_snippets,
+  markdown.vault_snippets,
+  markdown.blog_snippets,
+}) do
+  vim.list_extend(snippets, build())
+end
+
+return snippets, markdown.autosnippets()

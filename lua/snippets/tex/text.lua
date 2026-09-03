@@ -8,24 +8,17 @@ local nodes = require("config.snippets.nodes")
 local symbols = require("config.snippets.symbols")
 local triggers = require("config.snippets.triggers")
 local util = require("config.snippets.util")
+local text_math = require("config.snippets.text_math")
 
 local s = ls.snippet
 local i = ls.insert_node
 local t = ls.text_node
-local with_condition = util.with_condition
+local with_condition = conditions.with_condition
 local visual_insert = util.visual_insert
-local short_math_body = util.short_math_body
-local fixed_short_math_body = util.fixed_short_math_body
-local captured_short_math_body = util.captured_short_math_body
 
-local text = conditions.wrap(conditions.vimtex_text, conditions.vimtex_text_show)
-local line_text = util.with_line_begin(text)
-local list_text = util.with_line_begin(util.and_conditions(
-  text,
-  conditions.wrap(function()
-    return conditions.vimtex_env_any({ "enumerate", "itemize" })
-  end)
-))
+local text = conditions.text
+local line_text = conditions.with_line_begin(text)
+local list_text = conditions.with_line_begin(conditions.tex_list)
 
 ---Build a TeX text-mode short-math snippet with the shared trigger engine.
 ---@param trigger string
@@ -113,26 +106,26 @@ local snippets = {
 }
 
 vim.list_extend(snippets, {
-  short_math_word_snippet("ce", "inline chemistry math", short_math_body([[\(\ce{]], [[}\) ]])),
-  short_math_word_snippet("pu", "inline unit math", short_math_body([[\(\pu{]], [[}\) ]])),
-  short_math_word_snippet("rm", "inline roman math", short_math_body([[\(\mathrm{]], [[}\) ]])),
-  short_math_word_snippet("tt", "inline text math", short_math_body([[\(\text{]], [[}\) ]])),
+  short_math_word_snippet("ce", "inline chemistry math", text_math.body([[\(\ce{]], [[}\) ]])),
+  short_math_word_snippet("pu", "inline unit math", text_math.body([[\(\pu{]], [[}\) ]])),
+  short_math_word_snippet("rm", "inline roman math", text_math.body([[\(\mathrm{]], [[}\) ]])),
+  short_math_word_snippet("tt", "inline text math", text_math.body([[\(\text{]], [[}\) ]])),
   short_math_word_snippet(
     "case",
     "inline brace aligned",
-    short_math_body([[\(\left\lbrace\begin{aligned} ]], [[ \end{aligned}\right\.\) ]]),
+    text_math.body([[\(\left\lbrace\begin{aligned} ]], [[ \end{aligned}\right\.\) ]]),
     { priority = 100 }
   ),
   short_math_word_snippet(
     "cases",
     "inline cases",
-    short_math_body([[\(\begin{cases} ]], [[ \end{cases}\) ]]),
+    text_math.body([[\(\begin{cases} ]], [[ \end{cases}\) ]]),
     { priority = 100 }
   ),
   short_math_word_snippet(
     "align",
     "inline aligned",
-    short_math_body([[\(\begin{aligned} ]], [[ \end{aligned}\) ]]),
+    text_math.body([[\(\begin{aligned} ]], [[ \end{aligned}\) ]]),
     { priority = 100 }
   ),
   s(
@@ -177,22 +170,12 @@ for _, name in ipairs(symbols.markdown_inline_greek) do
   snippets[#snippets + 1] = short_math_word_snippet(
     name,
     "inline greek " .. name,
-    fixed_short_math_body("\\(\\" .. symbols.latex_greek_command(name) .. "\\) ")
+    text_math.fixed_body("\\(\\" .. symbols.latex_greek_command(name) .. "\\) ")
   )
 end
 
 local autosnippets = {
-  s(
-    with_condition({
-      trig = "lm",
-      trigEngine = triggers.short_math_word_engine,
-      wordTrig = false,
-      name = "inline math",
-      snippetType = "autosnippet",
-    }, text),
-    short_math_body([[\(]], [[\) ]]),
-    util.space_before_next_text_char_opts()
-  ),
+  text_math.inline([[\(]], [[\) ]]),
   s(
     with_condition({ trig = "dm", name = "display math", snippetType = "autosnippet" }, line_text),
     fmta(
@@ -203,16 +186,7 @@ local autosnippets = {
       { visual_insert(1), i(0) }
     )
   ),
-  s(
-    with_condition({
-      trig = ",,",
-      trigEngine = triggers.inline_math_postfix_engine,
-      wordTrig = false,
-      name = "inline captured math",
-      snippetType = "autosnippet",
-    }, text),
-    captured_short_math_body([[\(]], 2, [[\) ]])
-  ),
+  text_math.postfix([[\(]], [[\) ]]),
   s(
     with_condition({ trig = "ev", name = "environment", snippetType = "autosnippet" }, line_text),
     fmta(

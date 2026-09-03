@@ -10,7 +10,9 @@ local fmt = require("luasnip.extras.fmt").fmt
 local nodes = require("config.snippets.nodes")
 local symbols = require("config.snippets.symbols")
 local triggers = require("config.snippets.triggers")
+local conditions = require("config.snippets.conditions")
 local util = require("config.snippets.util")
+local text_math = require("config.snippets.text_math")
 
 local s = ls.snippet
 local sn = ls.snippet_node
@@ -22,11 +24,45 @@ local M = {}
 local cap = util.capture
 local captured_insert = util.captured_insert
 local literal_autosnippet = util.literal_autosnippet
-local short_math_body = util.short_math_body
-local captured_short_math_body = util.captured_short_math_body
 local visual_insert = util.visual_insert
-local with_condition = util.with_condition
+local with_condition = conditions.with_condition
 local word_autosnippet = util.word_autosnippet
+
+---Build a matrix body with insert nodes in each cell.
+---@param form string
+---@param rows integer
+---@param cols integer
+---@return SnipNode[]
+local function matrix_nodes(form, rows, cols)
+  local delimiter = {
+    b = [["["]],
+    B = [["{"]],
+    v = [["|"]],
+    V = [[("||", "||")]],
+  }
+  local mat_nodes = { t("mat(") }
+  local jump = 1
+
+  if delimiter[form] then
+    table.insert(mat_nodes, t("delim: " .. delimiter[form] .. ", "))
+  end
+
+  for row = 1, rows do
+    for col = 1, cols do
+      table.insert(mat_nodes, i(jump, row == col and "1" or "0"))
+      jump = jump + 1
+      if col < cols then
+        table.insert(mat_nodes, t(", "))
+      end
+    end
+    if row < rows then
+      table.insert(mat_nodes, t({ ";", "  " }))
+    end
+  end
+
+  table.insert(mat_nodes, t(")"))
+  return sn(nil, mat_nodes)
+end
 
 ---Builds `mat(a, b; c, d)` with the requested dimensions.
 ---@param _ SnipNodeArgs
@@ -45,49 +81,21 @@ local function matrix_node(_, snip)
     form = ""
   end
 
-  local delimiter = {
-    b = [["["]],
-    B = [["{"]],
-    v = [["|"]],
-    V = [[("||", "||")]],
-  }
-  local matrix_nodes = { t("mat(") }
-  local jump = 1
-
-  if delimiter[form] then
-    table.insert(matrix_nodes, t("delim: " .. delimiter[form] .. ", "))
-  end
-
-  for row = 1, rows do
-    for col = 1, cols do
-      table.insert(matrix_nodes, i(jump, row == col and "1" or "0"))
-      jump = jump + 1
-      if col < cols then
-        table.insert(matrix_nodes, t(", "))
-      end
-    end
-    if row < rows then
-      table.insert(matrix_nodes, t({ ";", "  " }))
-    end
-  end
-
-  table.insert(matrix_nodes, t(")"))
-  return sn(nil, matrix_nodes)
+  return sn(nil, matrix_nodes(form, rows, cols))
 end
 
 ---Build a manual Typst style wrapper plus a simple postfix alias.
 ---@param trigger string
 ---@param command string
 ---@param desc string
----@param condition SnipCondition
 ---@return SnipNode[]
-local function style_snippet(trigger, command, desc, condition)
+local function style_snippet(trigger, command, desc)
   return {
-    s(with_condition({ trig = trigger, name = desc }, condition), fmt(command .. "({})", { visual_insert(1) })),
+    s(with_condition({ trig = trigger, name = desc }, conditions.math), fmt(command .. "({})", { visual_insert(1) })),
     s(
       with_condition(
         { trig = "([%a]+)" .. trigger, trigEngine = "pattern", wordTrig = false, name = desc .. " postfix" },
-        condition
+        conditions.math
       ),
       fmt(command .. "({})", { cap(1) })
     ),
@@ -95,9 +103,9 @@ local function style_snippet(trigger, command, desc, condition)
 end
 
 ---Return Typst text-mode snippets.
----@param condition SnipCondition
 ---@return SnipNode[]
-function M.text_snippets(condition)
+function M.text_snippets()
+  local condition = conditions.text
   return {
     s(
       with_condition({ trig = "fig", name = "figure" }, condition),
@@ -133,21 +141,11 @@ function M.text_snippets(condition)
 end
 
 ---Return Typst text-mode autosnippets for math delimiters.
----@param condition SnipCondition
 ---@return SnipNode[]
-function M.text_autosnippets(condition)
+function M.text_autosnippets()
+  local condition = conditions.text
   return {
-    s(
-      with_condition({
-        trig = "lm",
-        trigEngine = triggers.short_math_word_engine,
-        wordTrig = false,
-        name = "inline math",
-        snippetType = "autosnippet",
-      }, condition),
-      short_math_body("$", "$"),
-      util.space_before_next_text_char_opts()
-    ),
+    text_math.inline("$", "$"),
     s(
       with_condition({ trig = "dm", name = "display math", snippetType = "autosnippet" }, condition),
       fmt(
@@ -157,23 +155,14 @@ $]],
         { visual_insert(1) }
       )
     ),
-    s(
-      with_condition({
-        trig = ",,",
-        trigEngine = triggers.inline_math_postfix_engine,
-        wordTrig = false,
-        name = "inline captured math",
-        snippetType = "autosnippet",
-      }, condition),
-      captured_short_math_body("$", 2, "$ ")
-    ),
+    text_math.postfix("$", "$ "),
   }
 end
 
 ---Return Typst math snippets and symbol aliases.
----@param condition SnipCondition
 ---@return SnipNode[]
-function M.math_snippets(condition)
+function M.math_snippets()
+  local condition = conditions.math
   local snippets = {
     s(
       with_condition({ trig = "bin", name = "binomial" }, condition),
@@ -240,10 +229,6 @@ function M.math_snippets(condition)
       )
     ),
     s(
-      with_condition({ trig = "mat([2-5])([2-5])", trigEngine = "pattern", name = "matrix" }, condition),
-      { d(1, matrix_node) }
-    ),
-    s(
       with_condition({
         trig = "mm",
         trigEngine = triggers.simple_matrix_engine,
@@ -287,7 +272,7 @@ function M.math_snippets(condition)
 
   for _, def in ipairs(symbols.math_styles) do
     if def.typst then
-      vim.list_extend(snippets, style_snippet(def.trigger, def.typst, def.desc, condition))
+      vim.list_extend(snippets, style_snippet(def.trigger, def.typst, def.desc))
     end
   end
 
@@ -295,14 +280,15 @@ function M.math_snippets(condition)
 end
 
 ---Return Typst math autosnippets.
----@param condition SnipCondition
 ---@return SnipNode[]
-function M.math_autosnippets(condition)
+function M.math_autosnippets()
+  local condition = conditions.math
   local autos = {
     s(
       with_condition({ trig = "//", wordTrig = false, name = "fraction", snippetType = "autosnippet" }, condition),
       fmt("frac({}, {})", { visual_insert(1), i(2) })
     ),
+    -- TODO: not work if there's no chars after cursor
     s(
       with_condition({
         trig = "/",

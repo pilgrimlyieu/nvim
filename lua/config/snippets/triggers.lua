@@ -1,49 +1,13 @@
 ---Custom LuaSnip trigger engines shared by snippet builders.
 local M = {}
 
-local punctuation = {
-  [""] = true,
-  [" "] = true,
-  ["，"] = true,
-  ["。"] = true,
-  ["；"] = true,
-  ["："] = true,
-  ["「"] = true,
-  ["」"] = true,
-  ["『"] = true,
-  ["』"] = true,
-  ["《"] = true,
-  ["》"] = true,
-  ["'"] = true,
-  ["‘"] = true,
-  ['"'] = true,
-  ["【"] = true,
-  ["】"] = true,
-  ["["] = true,
-  ["]"] = true,
-  ["（"] = true,
-  ["）"] = true,
-  ["("] = true,
-  [")"] = true,
-  ["{"] = true,
-  ["}"] = true,
-  ["<"] = true,
-  [">"] = true,
-  ["、"] = true,
-  ["-"] = true,
-  ["*"] = true,
-  ["！"] = true,
-  ["!"] = true,
-  ["？"] = true,
-  ["?"] = true,
-}
-
 -- Trigger engines receive the full current line on every match attempt.  These
 -- byte windows cap suffix scans to the migrated shorthand grammar instead of
 -- treating autosnippets as paragraph-scale parsers.
 local FRACTION_TRIGGER_WINDOW = 80 -- simple atom/script numerators and short parenthesized groups.
 local MATRIX_TRIGGER_WINDOW = 16 -- old `bmm.22&` family: form + `mm.` + one/two dimensions + suffix.
 local POSTFIX_TRIGGER_WINDOW = 160 -- compact prose/math/code token before `,,` or `;;`.
+local SHORT_MATH_TRIGGER_WINDOW = 16 -- short math words like `ce`, `alpha`, and `lm`.
 local INLINE_MATH_SUFFIXES = { ",,", "，，" }
 local INLINE_CODE_SUFFIXES = { ";;", "；；" }
 
@@ -94,29 +58,6 @@ local function matching_suffix(text, suffixes)
   return nil
 end
 
----Preserve a captured prose prefix and add spacing when it is not punctuation.
----@param prefix string
----@return string
-function M.short_math_prefix(prefix)
-  return prefix .. (punctuation[prefix] and "" or " ")
-end
-
----Drop leading punctuation captured by postfix inline-code triggers.
----
----The inline-code postfix matcher only captures an ASCII token suffix.  This
----helper trims punctuation that was part of that suffix, for example `(foo);;`
----keeps `(` outside and wraps `foo)`.  It does not scan left into CJK prose:
----`中文foo;;` still wraps only `foo`.
----@param token string
----@return string
-local function trim_to_word_boundary(token)
-  while token ~= "" and not is_ascii_word_char(token:sub(1, 1)) do
-    token = token:sub(2)
-  end
-
-  return token
-end
-
 ---Match the numerator part of `1/`, `x_i/`, `\alpha/`, etc.
 ---
 ---The old UltiSnips trigger was a Python regex. LuaSnip's `"pattern"` engine
@@ -150,10 +91,10 @@ function M.simple_fraction_engine()
 
     local text = line_to_cursor:sub(math.max(1, #line_to_cursor - FRACTION_TRIGGER_WINDOW))
 
-    if text:sub(-1) == "/" and text:sub(-2, -2) == ")" then
-      local depth = 0
+    if text:sub(-2, -2) == ")" then
+      local depth = 1
 
-      for index = #text - 1, 1, -1 do
+      for index = #text - 2, 1, -1 do
         local char = text:sub(index, index)
 
         if char == ")" then
@@ -197,13 +138,12 @@ function M.simple_matrix_engine()
     end
 
     local text = line_to_cursor:sub(math.max(1, #line_to_cursor - MATRIX_TRIGGER_WINDOW))
-    local form, rows, cols = text:match("([mpbBvV])mm%.([1-5])([1-5]?)&$")
+    local match, form, rows, cols = text:match("(([mpbBvV])mm%.([1-5])([1-5]?)&)$")
 
     if not form then
       return nil
     end
 
-    local match = form .. "mm" .. rows .. cols .. "&"
     return match, { form, rows, cols }
   end
 end
@@ -241,7 +181,7 @@ end
 ---@return SnipTriggerMatcher
 function M.short_math_word_engine(trigger)
   return function(line_to_cursor)
-    local text = line_to_cursor:sub(math.max(1, #line_to_cursor - #trigger - 8))
+    local text = line_to_cursor:sub(math.max(1, #line_to_cursor - #trigger - SHORT_MATH_TRIGGER_WINDOW))
     if not ends_with(text, trigger) then
       return nil
     end
@@ -296,7 +236,6 @@ function M.inline_code_postfix_engine()
     local text = line_to_cursor:sub(math.max(1, #line_to_cursor - POSTFIX_TRIGGER_WINDOW))
     local before_suffix = text:sub(1, #text - #suffix)
     local token = before_suffix:match("([A-Za-z0-9_^+=%%%.<>%[%]%(%)%-]+)$")
-    token = token and trim_to_word_boundary(token)
     if token ~= nil and token ~= "" then
       return token .. suffix, { token }
     end

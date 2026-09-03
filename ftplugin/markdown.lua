@@ -21,18 +21,4 @@ end
 -- themselves on every edit/save.
 vim.b.autoformat = false
 
-if vim.diagnostic.is_enabled then
-  vim.diagnostic.enable(false, { bufnr = 0 })
-else
-  ---@diagnostic disable-next-line: deprecated
-  vim.diagnostic.disable(0)
-end
-
-local markdown_buf = vim.api.nvim_get_current_buf()
-vim.schedule(function()
-  if vim.api.nvim_buf_is_valid(markdown_buf) and vim.bo[markdown_buf].filetype == "markdown" then
-    pcall(function()
-      require("config.markdown_vimtex").enable(markdown_buf)
-    end)
-  end
-end)
+vim.diagnostic.enable(false, { bufnr = 0 })

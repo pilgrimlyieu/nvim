@@ -1,9 +1,5 @@
----Reusable Markdown snippet builders.
----
----These are intentionally filetype-agnostic builders: each public function
----receives a LuaSnip condition object and returns snippets that can be composed
----from `lua/snippets/markdown/*.lua`.  Keeping the tables small by topic makes
----the migrated UltiSnips collection easier to audit later.
+---Markdown snippet factories, grouped by writing task.
+---Each factory owns its conditions and returns fresh nodes for the loader.
 local ls = require("luasnip")
 local rep = require("luasnip.extras").rep
 local fmt = require("luasnip.extras.fmt").fmt
@@ -11,7 +7,9 @@ local fmta = require("luasnip.extras.fmt").fmta
 local nodes = require("config.snippets.nodes")
 local symbols = require("config.snippets.symbols")
 local triggers = require("config.snippets.triggers")
+local conditions = require("config.snippets.conditions")
 local util = require("config.snippets.util")
+local text_math = require("config.snippets.text_math")
 
 local s = ls.snippet
 local sn = ls.snippet_node
@@ -22,12 +20,9 @@ local d = ls.dynamic_node
 
 local M = {}
 local cap = util.capture
-local with_condition = util.with_condition
+local with_condition = conditions.with_condition
 local visual_insert = util.visual_insert
 local visual_transform_insert = util.visual_transform_insert
-local short_math_body = util.short_math_body
-local fixed_short_math_body = util.fixed_short_math_body
-local captured_short_math_body = util.captured_short_math_body
 
 ---Build a GitHub-flavored Markdown table.
 ---@param align "plain"|"left"|"right"|"center"
@@ -244,11 +239,10 @@ end
 ---Build a text-mode short-math snippet using a UTF-8-aware trigger engine.
 ---@param trigger string
 ---@param name string
----@param condition SnipCondition
 ---@param body SnipNodeBody
 ---@param extra? SnipContextExtra
 ---@return SnipNode
-local function short_math_word_snippet(trigger, name, condition, body, extra)
+local function short_math_word_snippet(trigger, name, body, extra)
   return s(
     with_condition(
       util.extend({
@@ -257,53 +251,53 @@ local function short_math_word_snippet(trigger, name, condition, body, extra)
         wordTrig = false,
         name = name,
       }, extra),
-      condition
+      conditions.text
     ),
     body
   )
 end
 
----Return Markdown prose snippets that produce inline/display LaTeX math.
----@param condition SnipCondition
+---Return Markdown prose snippets.
 ---@return SnipNode[]
-function M.snippets(condition)
+function M.snippets()
+  local condition = conditions.text
   return {
     s(
       with_condition(
         { trig = "tb([1-9])([1-9])", trigEngine = "pattern", name = "table" },
-        util.with_line_begin(condition)
+        conditions.with_line_begin(condition)
       ),
       { d(1, table_node("plain")) }
     ),
     s(
       with_condition(
         { trig = "tbl([1-9])([1-9])", trigEngine = "pattern", name = "left table" },
-        util.with_line_begin(condition)
+        conditions.with_line_begin(condition)
       ),
       { d(1, table_node("left")) }
     ),
     s(
       with_condition(
         { trig = "tbr([1-9])([1-9])", trigEngine = "pattern", name = "right table" },
-        util.with_line_begin(condition)
+        conditions.with_line_begin(condition)
       ),
       { d(1, table_node("right")) }
     ),
     s(
       with_condition(
         { trig = "tbm([1-9])([1-9])", trigEngine = "pattern", name = "center table" },
-        util.with_line_begin(condition)
+        conditions.with_line_begin(condition)
       ),
       { d(1, table_node("center")) }
     ),
     s(
-      with_condition({ trig = "todo", name = "todo" }, util.with_line_begin(condition)),
+      with_condition({ trig = "todo", name = "todo" }, conditions.with_line_begin(condition)),
       fmt("- [{}] {}", { nodes.choice(1, { "x", " " }), i(2) })
     ),
     s(
       with_condition(
         { trig = "%- %[([ x])%] (.+)", trigEngine = "pattern", wordTrig = false, name = "toggle todo" },
-        util.with_line_begin(condition)
+        conditions.with_line_begin(condition)
       ),
       {
         f(function(_, snip)
@@ -322,7 +316,7 @@ function M.snippets(condition)
       fmt("![{}](/images/{})", { i(1), visual_insert(2) })
     ),
     s(
-      with_condition({ trig = "code", name = "code block" }, util.with_line_begin(condition)),
+      with_condition({ trig = "code", name = "code block" }, conditions.with_line_begin(condition)),
       fmt(
         [[```{}
 {}
@@ -330,7 +324,7 @@ function M.snippets(condition)
         { i(1), visual_insert(2) }
       )
     ),
-    s(with_condition({ trig = "cc", name = "folded code block" }, util.with_line_begin(condition)), {
+    s(with_condition({ trig = "cc", name = "folded code block" }, conditions.with_line_begin(condition)), {
       t("<!-- {{{ "),
       i(1, "code"),
       t({ " -->", "```" }),
@@ -341,29 +335,26 @@ function M.snippets(condition)
     }),
     s(with_condition({ trig = "kbd", name = "keyboard" }, condition), fmt("<kbd>{}</kbd>", { visual_insert(1) })),
     s(with_condition({ trig = "fnt", name = "footnote" }, condition), fmt("[^{}]", { visual_insert(1) })),
+    s(with_condition({ trig = "temp", name = "note template" }, conditions.at_buffer_start(condition)), {
+      f(week_title),
+      t({ "", "", "- " }),
+      f(week_range),
+      t({ "", "- 编写时间：" }),
+      f(writing_time),
+      t({ "", "", "[toc]", "", "### 任务", "", "" }),
+      i(1),
+      t({ "", "", "### 笔记", "", "" }),
+      i(0),
+    }),
     s(
-      with_condition(
-        { trig = "temp", name = "note template" },
-        util.on_first_buffer_line(util.with_trigger_column(condition, 0))
-      ),
-      {
-        f(week_title),
-        t({ "", "", "- " }),
-        f(week_range),
-        t({ "", "- 编写时间：" }),
-        f(writing_time),
-        t({ "", "", "[toc]", "", "### 任务", "", "" }),
-        i(1),
-        t({ "", "", "### 笔记", "", "" }),
-        i(0),
-      }
-    ),
-    s(
-      with_condition({ trig = "p", name = "true or false prompt" }, util.at_buffer_start(condition)),
+      with_condition({ trig = "p", name = "true or false prompt" }, conditions.at_buffer_start(condition)),
       t({ "判断正误：", "", "" })
     ),
     s(
-      with_condition({ trig = "copt", name = "GitHub Copilot translation notice" }, util.with_line_begin(condition)),
+      with_condition(
+        { trig = "copt", name = "GitHub Copilot translation notice" },
+        conditions.with_line_begin(condition)
+      ),
       t({ "> 由 GitHub Copilot 生成的翻译", "> Generated by GitHub Copilot", "", "" })
     ),
     s(
@@ -392,7 +383,10 @@ function M.snippets(condition)
     s(with_condition({ trig = "uu", name = "underline" }, condition), fmt("<u>{}</u>", { visual_insert(1) })),
     s(with_condition({ trig = "/.", name = "comment" }, condition), fmt("<!-- {} -->", { visual_insert(1) })),
     s(
-      with_condition({ trig = "#([1-6])", trigEngine = "pattern", name = "heading" }, util.with_line_begin(condition)),
+      with_condition(
+        { trig = "#([1-6])", trigEngine = "pattern", name = "heading" },
+        conditions.with_line_begin(condition)
+      ),
       {
         f(function(_, snip)
           return string.rep("#", tonumber(snip.captures[1]) or 1) .. " "
@@ -403,37 +397,37 @@ function M.snippets(condition)
 end
 
 ---Return Markdown prose snippets that wrap text as short math expressions.
----@param condition SnipCondition
 ---@return SnipNode[]
-function M.short_math_snippets(condition)
+function M.short_math_snippets()
+  local condition = conditions.text
   local snippets = {
-    short_math_word_snippet("ce", "inline chemistry", condition, short_math_body([[$\ce{]], [[}$ ]])),
-    short_math_word_snippet("pu", "inline unit", condition, short_math_body([[$\pu{]], [[}$ ]])),
-    short_math_word_snippet("rm", "inline roman math", condition, short_math_body([[$\mathrm{]], [[}$ ]])),
-    short_math_word_snippet("tt", "inline text math", condition, short_math_body([[$\text{]], [[}$ ]])),
+    short_math_word_snippet("ce", "inline chemistry", text_math.body([[$\ce{]], [[}$ ]])),
+    short_math_word_snippet("pu", "inline unit", text_math.body([[$\pu{]], [[}$ ]])),
+    short_math_word_snippet("rm", "inline roman math", text_math.body([[$\mathrm{]], [[}$ ]])),
+    short_math_word_snippet("tt", "inline text math", text_math.body([[$\text{]], [[}$ ]])),
     short_math_word_snippet(
       "case",
       "inline brace aligned",
-      condition,
-      short_math_body([[$\left\lbrace\begin{aligned} ]], [[ \end{aligned}\right.$ ]]),
+      text_math.body([[$\left\lbrace\begin{aligned} ]], [[ \end{aligned}\right.$ ]]),
       { priority = 100 }
     ),
     short_math_word_snippet(
       "cases",
       "inline cases",
-      condition,
-      short_math_body([[$\begin{cases} ]], [[ \end{cases}$ ]]),
+      text_math.body([[$\begin{cases} ]], [[ \end{cases}$ ]]),
       { priority = 100 }
     ),
     short_math_word_snippet(
       "align",
       "inline aligned",
-      condition,
-      short_math_body([[$\begin{aligned} ]], [[ \end{aligned}$ ]]),
+      text_math.body([[$\begin{aligned} ]], [[ \end{aligned}$ ]]),
       { priority = 100 }
     ),
     s(
-      with_condition({ trig = "case", name = "display brace aligned", priority = 200 }, util.with_line_begin(condition)),
+      with_condition(
+        { trig = "case", name = "display brace aligned", priority = 200 },
+        conditions.with_line_begin(condition)
+      ),
       fmta(
         [[$$
 \left\lbrace\begin{aligned}
@@ -445,7 +439,7 @@ $$
       )
     ),
     s(
-      with_condition({ trig = "cases", name = "display cases", priority = 200 }, util.with_line_begin(condition)),
+      with_condition({ trig = "cases", name = "display cases", priority = 200 }, conditions.with_line_begin(condition)),
       fmta(
         [[$$
 \begin{cases}
@@ -457,7 +451,10 @@ $$
       )
     ),
     s(
-      with_condition({ trig = "align", name = "display aligned", priority = 200 }, util.with_line_begin(condition)),
+      with_condition(
+        { trig = "align", name = "display aligned", priority = 200 },
+        conditions.with_line_begin(condition)
+      ),
       fmta(
         [[$$
 \begin{aligned}
@@ -476,8 +473,7 @@ $$
       short_math_word_snippet(
         name,
         "inline greek " .. name,
-        condition,
-        fixed_short_math_body("$\\" .. symbols.latex_greek_command(name) .. "$ ")
+        text_math.fixed_body("$\\" .. symbols.latex_greek_command(name) .. "$ ")
       )
     )
   end
@@ -486,9 +482,9 @@ $$
 end
 
 ---Return Markdown text-mode reference snippets.
----@param condition SnipCondition
 ---@return SnipNode[]
-function M.reference_snippets(condition)
+function M.reference_snippets()
+  local condition = conditions.text
   return {
     s(with_condition({ trig = "ref", name = "reference" }, condition), fmta([[$\ref{<>}$]], { i(1) })),
     s(
@@ -504,9 +500,9 @@ function M.reference_snippets(condition)
 end
 
 ---Return LaTeX-math label snippets used inside Markdown math zones.
----@param condition SnipCondition
 ---@return SnipNode[]
-function M.math_reference_snippets(condition)
+function M.math_reference_snippets()
+  local condition = conditions.math
   return {
     s(with_condition({ trig = "lab", name = "label" }, condition), fmta([[\label{<>}]], { i(1) })),
     s(
@@ -521,9 +517,9 @@ function M.math_reference_snippets(condition)
 end
 
 ---Return Obsidian/vault callout snippets and callout cleanup helpers.
----@param condition SnipCondition
 ---@return SnipNode[]
-function M.vault_snippets(condition)
+function M.vault_snippets()
+  local condition = conditions.text
   local callouts = {
     calln = "NOTE",
     calla = "ABSTRACT",
@@ -545,7 +541,7 @@ function M.vault_snippets(condition)
     table.insert(
       snippets,
       s(
-        with_condition({ trig = trigger, name = "callout " .. name }, util.with_line_begin(condition)),
+        with_condition({ trig = trigger, name = "callout " .. name }, conditions.with_line_begin(condition)),
         fmt(
           [[> [!{}]
 {}]],
@@ -556,7 +552,7 @@ function M.vault_snippets(condition)
   end
 
   snippets[#snippets + 1] =
-    s(with_condition({ trig = "rmcall", name = "remove callout markup" }, util.with_line_begin(condition)), {
+    s(with_condition({ trig = "rmcall", name = "remove callout markup" }, conditions.with_line_begin(condition)), {
       f(function(_, snip)
         return remove_callout_lines(selected_lines(snip))
       end),
@@ -566,14 +562,15 @@ function M.vault_snippets(condition)
 end
 
 ---Return Hexo/blog front-matter and shortcode snippets.
----@param condition SnipCondition
 ---@return SnipNode[]
-function M.blog_snippets(condition)
+function M.blog_snippets()
+  local condition = conditions.text
+  local metadata = conditions.or_conditions(condition, conditions.frontmatter)
   local snippets = {
     s(
       with_condition(
         { trig = "@", name = "Hexo front matter at file start", snippetType = "autosnippet" },
-        util.at_buffer_start(condition)
+        conditions.at_buffer_start(condition)
       ),
       fmt(
         [[---
@@ -636,20 +633,20 @@ tags: {}
     s(
       with_condition(
         { trig = "date: (.*)", trigEngine = "pattern", wordTrig = false, name = "refresh date" },
-        util.with_line_begin(condition)
+        conditions.with_line_begin(metadata)
       ),
       { t("date: "), f(now) }
     ),
     s(
       with_condition(
         { trig = "updated: (.*)", trigEngine = "pattern", wordTrig = false, name = "refresh updated" },
-        util.with_line_begin(condition)
+        conditions.with_line_begin(metadata)
       ),
       { t("updated: "), f(now) }
     ),
     s(with_condition({ trig = "tag", name = "Hexo tag" }, condition), fmta([[{{% <> %}}]], { visual_insert(1) })),
     s(
-      with_condition({ trig = "adm", name = "admonition" }, util.with_trigger_column(condition, 0)),
+      with_condition({ trig = "adm", name = "admonition" }, conditions.with_trigger_column(condition, 0)),
       fmt(
         [[!!! {} {}
     {}]],
@@ -661,7 +658,7 @@ tags: {}
       )
     ),
     s(
-      with_condition({ trig = "tabs", name = "tabs" }, util.with_trigger_column(condition, 0)),
+      with_condition({ trig = "tabs", name = "tabs" }, conditions.with_trigger_column(condition, 0)),
       fmta(
         [[{{% tabs <>, <> %}}
 <>
@@ -670,7 +667,7 @@ tags: {}
       )
     ),
     s(
-      with_condition({ trig = "tab", name = "tab" }, util.with_trigger_column(condition, 0)),
+      with_condition({ trig = "tab", name = "tab" }, conditions.with_trigger_column(condition, 0)),
       fmt(
         [[<!-- tab {} -->
 {}
@@ -688,7 +685,7 @@ tags: {}
     s(
       with_condition(
         { trig = "^categories: (.+)", trigEngine = "pattern", wordTrig = false, name = "format categories" },
-        condition
+        metadata
       ),
       {
         f(function(_, snip)
@@ -706,7 +703,7 @@ tags: {}
     s(
       with_condition(
         { trig = "^tags: ([^[].+)", trigEngine = "pattern", wordTrig = false, name = "format tags" },
-        condition
+        metadata
       ),
       {
         f(function(_, snip)
@@ -717,7 +714,7 @@ tags: {}
     s(
       with_condition(
         { trig = "^tags: %[(.+)%]([^%[%]]+)", trigEngine = "pattern", wordTrig = false, name = "append tags" },
-        condition
+        metadata
       ),
       {
         f(function(_, snip)
@@ -733,25 +730,15 @@ tags: {}
 end
 
 ---Return Markdown autosnippets for inline/display math and inline code.
----@param condition SnipCondition
 ---@return SnipNode[]
-function M.autosnippets(condition)
+function M.autosnippets()
+  local condition = conditions.text
   return {
-    s(
-      with_condition({
-        trig = "lm",
-        trigEngine = triggers.short_math_word_engine,
-        wordTrig = false,
-        name = "inline math",
-        snippetType = "autosnippet",
-      }, condition),
-      short_math_body("$", "$"),
-      util.space_before_next_text_char_opts()
-    ),
+    text_math.inline("$", "$"),
     s(
       with_condition(
         { trig = "dm", name = "display math", snippetType = "autosnippet" },
-        util.with_line_begin(condition)
+        conditions.with_line_begin(condition)
       ),
       fmt(
         [[$$
@@ -761,16 +748,7 @@ $$
         { visual_insert(1), i(0) }
       )
     ),
-    s(
-      with_condition({
-        trig = ",,",
-        trigEngine = triggers.inline_math_postfix_engine,
-        wordTrig = false,
-        name = "inline captured math",
-        snippetType = "autosnippet",
-      }, condition),
-      captured_short_math_body("$", 2, "$ ")
-    ),
+    text_math.postfix("$", "$ "),
     s(
       with_condition({
         trig = ";;",
