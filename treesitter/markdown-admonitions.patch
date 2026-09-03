@@ -1,0 +1,211 @@
+--- a/tree-sitter-markdown/grammar.js
++++ b/tree-sitter-markdown/grammar.js
+@@ -39,6 +39,7 @@
+             $.paragraph,
+             $.indented_code_block,
+             $.block_quote,
++            $.admonition,
+             $.thematic_break,
+             $.list,
+             $.fenced_code_block,
+@@ -292,6 +293,16 @@
+         // external scanner.
+         //
+         // https://github.github.com/gfm/#block-quotes
++        // A Python-Markdown style container: !!! type [title], then indented blocks.
++        admonition: $ => seq(
++            alias($._admonition_start, $.admonition_marker),
++            optional(alias($._line, $.inline)),
++            choice($._newline, $._eof),
++            repeat($._block),
++            $._block_close,
++            optional($.block_continuation)
++        ),
++
+         block_quote: $ => seq(
+             alias($._block_quote_start, $.block_quote_marker),
+             optional($.block_continuation),
+@@ -580,6 +591,7 @@
+ 
+         $._pipe_table_start,
+         $._pipe_table_line_ending,
++        $._admonition_start,
+     ],
+     precedences: $ => [
+         [$._setext_heading1, $._block],
+@@ -603,7 +615,8 @@
+         repeat(choice(
+             $._line,
+             $._newline,
+-            seq(close, $._close_block),
++            // A blank-line close can leave the parent container's prefix pending.
++            seq(close, $._close_block, optional($.block_continuation)),
+         )),
+         $._block_close,
+         optional($.block_continuation),
+--- a/tree-sitter-markdown/src/scanner.c
++++ b/tree-sitter-markdown/src/scanner.c
+@@ -54,6 +54,7 @@
+     PLUS_METADATA,
+     PIPE_TABLE_START,
+     PIPE_TABLE_LINE_ENDING,
++    ADMONITION_START,
+ } TokenType;
+ 
+ // Description of a block on the block stack.
+@@ -85,6 +86,11 @@
+     LIST_ITEM_MAX_INDENTATION,
+     FENCED_CODE_BLOCK,
+     ANONYMOUS,
++    // Header indentation (0..3 columns) plus four columns for the body.
++    ADMONITION,
++    ADMONITION_1_INDENTATION,
++    ADMONITION_2_INDENTATION,
++    ADMONITION_3_INDENTATION,
+ } Block;
+ 
+ // Determines if a character is punctuation as defined by the markdown spec.
+@@ -93,10 +99,11 @@
+            (chr >= '[' && chr <= '`') || (chr >= '{' && chr <= '~');
+ }
+ 
+-// Returns the indentation level which lines of a list item should have at
+-// minimum. Should only be called with blocks for which `is_list_item` returns
+-// true.
+-static uint8_t list_item_indentation(Block block) {
++// Required indentation for list items and admonition containers.
++static uint8_t container_indentation(Block block) {
++    if (block >= ADMONITION) {
++        return (uint8_t)(block - ADMONITION + 4);
++    }
+     return (uint8_t)(block - LIST_ITEM + 2);
+ }
+ 
+@@ -169,6 +176,7 @@
+     false, // PLUS_METADATA,
+     true,  // PIPE_TABLE_START,
+     false, // PIPE_TABLE_LINE_ENDING,
++    true,  // ADMONITION_START,
+ };
+ 
+ // State bitflags used with `Scanner.state`
+@@ -347,6 +355,10 @@
+                 return true;
+             }
+             break;
++        case ADMONITION:
++        case ADMONITION_1_INDENTATION:
++        case ADMONITION_2_INDENTATION:
++        case ADMONITION_3_INDENTATION:
+         case LIST_ITEM:
+         case LIST_ITEM_1_INDENTATION:
+         case LIST_ITEM_2_INDENTATION:
+@@ -363,15 +375,15 @@
+         case LIST_ITEM_13_INDENTATION:
+         case LIST_ITEM_14_INDENTATION:
+         case LIST_ITEM_MAX_INDENTATION:
+-            while (s->indentation < list_item_indentation(block)) {
++            while (s->indentation < container_indentation(block)) {
+                 if (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+                     s->indentation += advance(s, lexer);
+                 } else {
+                     break;
+                 }
+             }
+-            if (s->indentation >= list_item_indentation(block)) {
+-                s->indentation -= list_item_indentation(block);
++            if (s->indentation >= container_indentation(block)) {
++                s->indentation -= container_indentation(block);
+                 return true;
+             }
+             if (lexer->lookahead == '\n' || lexer->lookahead == '\r') {
+@@ -566,6 +578,37 @@
+         return true;
+     }
+     return false;
++}
++
++static bool parse_admonition(Scanner *s, TSLexer *lexer,
++                             const bool *valid_symbols) {
++    if (!valid_symbols[ADMONITION_START] || s->indentation > 3) return false;
++    uint8_t indentation = s->indentation;
++    for (unsigned i = 0; i < 3; i++) {
++        if (lexer->lookahead != '!') return false;
++        advance(s, lexer);
++    }
++    if (lexer->lookahead != ' ' && lexer->lookahead != '\t') return false;
++    do {
++        advance(s, lexer);
++    } while (lexer->lookahead == ' ' || lexer->lookahead == '\t');
++    if (!((lexer->lookahead >= 'a' && lexer->lookahead <= 'z') ||
++          (lexer->lookahead >= 'A' && lexer->lookahead <= 'Z') ||
++          lexer->lookahead == '_')) return false;
++    do {
++        advance(s, lexer);
++    } while ((lexer->lookahead >= 'a' && lexer->lookahead <= 'z') ||
++             (lexer->lookahead >= 'A' && lexer->lookahead <= 'Z') ||
++             (lexer->lookahead >= '0' && lexer->lookahead <= '9') ||
++             lexer->lookahead == '_' || lexer->lookahead == '-');
++    if (lexer->lookahead != ' ' && lexer->lookahead != '\t' &&
++        lexer->lookahead != '\n' && lexer->lookahead != '\r' &&
++        !lexer->eof(lexer)) return false;
++    mark_end(s, lexer);
++    if (!s->simulate) push_block(s, (Block)(ADMONITION + indentation));
++    s->indentation = 0;
++    lexer->result_symbol = ADMONITION_START;
++    return true;
+ }
+ 
+ static bool parse_block_quote(Scanner *s, TSLexer *lexer,
+@@ -1176,13 +1219,10 @@
+ }
+ 
+ static bool parse_pipe_table(Scanner *s, TSLexer *lexer,
+-                             const bool *valid_symbols) {
+-
+-    // unused
+-    (void)(valid_symbols);
++                             bool mark_start) {
+ 
+     // PIPE_TABLE_START is zero width
+-    mark_end(s, lexer);
++    if (mark_start) mark_end(s, lexer);
+     // count number of cells
+     size_t cell_count = 0;
+     // also remember if we see starting and ending pipes, as empty headers have
+@@ -1392,6 +1432,12 @@
+                 return parse_star(s, lexer, valid_symbols);
+             case '_':
+                 return parse_thematic_break_underscore(s, lexer, valid_symbols);
++            case '!':
++                mark_end(s, lexer);
++                if (parse_admonition(s, lexer, valid_symbols)) return true;
++                // The prefix may have been consumed; keep the table's start.
++                return valid_symbols[PIPE_TABLE_START] &&
++                       parse_pipe_table(s, lexer, false);
+             case '>':
+                 // A '>' could mark the beginning of a block quote
+                 return parse_block_quote(s, lexer, valid_symbols);
+@@ -1427,7 +1473,7 @@
+         }
+         if (lexer->lookahead != '\r' && lexer->lookahead != '\n' &&
+             valid_symbols[PIPE_TABLE_START]) {
+-            return parse_pipe_table(s, lexer, valid_symbols);
++            return parse_pipe_table(s, lexer, true);
+         }
+     } else { // we are in the state of trying to match all currently open blocks
+         bool partial_success = false;
+@@ -1504,7 +1550,12 @@
+                 }
+             }
+             bool all_will_be_matched = s->matched == s->open_blocks.size;
+-            if (!lexer->eof(lexer) &&
++            // Unlike lists/quotes, admonitions have no lazy dedented continuation.
++            bool admonition_closed = false;
++            for (size_t i = s->matched; i < s->open_blocks.size; i++) {
++                if (s->open_blocks.items[i] >= ADMONITION) admonition_closed = true;
++            }
++            if (!admonition_closed && !lexer->eof(lexer) &&
+                 !scan(s, lexer, paragraph_interrupt_symbols)) {
+                 s->matched = matched_temp;
+                 // If the last line break ended a paragraph and no new block

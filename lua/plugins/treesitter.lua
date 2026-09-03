@@ -1,9 +1,21 @@
 return {
   {
-    "nvim-treesitter/nvim-treesitter",
-    init = function()
-      require("config.markdown_treesitter").setup()
+    "tree-sitter-grammars/tree-sitter-markdown",
+    name = "tree-sitter-markdown-with-admonitions",
+    commit = "a0a00f817d02412bd92c54d316f164d827b57b5c",
+    lazy = false,
+    priority = 1000,
+    build = function(plugin)
+      require("config.markdown_parser").build(plugin)
     end,
+    config = function(plugin)
+      -- Load before any Markdown query/parser; :TSUpdate can keep managing
+      -- its stock parsers without replacing this library.
+      require("config.markdown_parser").setup(plugin)
+    end,
+  },
+  {
+    "nvim-treesitter/nvim-treesitter",
     opts = function(_, opts)
       -- LazyVim's have_query() compiles the full query at FileType time,
       -- before the first frame (~150ms for cpp highlights). An existence
