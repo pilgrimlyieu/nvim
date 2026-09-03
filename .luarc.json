@@ -1,7 +1,11 @@
 {
   "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
   "runtime.version": "LuaJIT",
-  "diagnostics.globals": ["vim"],
+  "runtime.path": ["?.lua", "?/init.lua"],
+  "runtime.pathStrict": true,
+  "diagnostics.globals": ["vim", "LazyVim", "Snacks"],
+  "diagnostics.libraryFiles": "Opened",
+  "diagnostics.workspaceEvent": "OnSave",
   "workspace.checkThirdParty": false,
   "telemetry.enable": false
 }

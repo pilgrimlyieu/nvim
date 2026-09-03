@@ -1,14 +1,5 @@
 return {
   {
-    "folke/lazydev.nvim",
-    ft = "lua",
-    opts = {
-      library = {
-        { path = "jj.nvim", words = { "jj%." } },
-      },
-    },
-  },
-  {
     "nvim-mini/mini.align",
     keys = {
       { "ga", mode = { "n", "v" }, desc = "Align" },

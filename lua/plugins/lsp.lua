@@ -12,11 +12,9 @@ return {
         table.insert(opts.ensure_installed, "tinymist")
       end
 
-      opts.npm = opts.npm or {}
-      opts.npm.install_args = opts.npm.install_args or {}
-      if not vim.tbl_contains(opts.npm.install_args, "--min-release-age=0") then
-        table.insert(opts.npm.install_args, "--min-release-age=0")
-      end
+      opts.npm = vim.tbl_deep_extend("error", opts.npm or {}, {
+        install_args = "--min-release-age=0",
+      })
 
       return opts
     end,
@@ -55,9 +53,10 @@ return {
     "mfussenegger/nvim-lint",
     optional = true,
     opts = function(_, opts)
-      opts.linters_by_ft = opts.linters_by_ft or {}
-      opts.linters_by_ft.markdown = {}
-      opts.linters_by_ft["markdown.mdx"] = {}
+      opts.linters_by_ft = vim.tbl_deep_extend("force", opts.linters_by_ft or {}, {
+        markdown = {},
+        ["markdown.mdx"] = {},
+      })
 
       return opts
     end,

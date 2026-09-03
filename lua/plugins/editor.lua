@@ -33,9 +33,9 @@ return {
         search = {
           enabled = true,
         },
-        char = {
-          jump_labels = true,
-        },
+      },
+      jump = {
+        autojump = true,
       },
     },
   },
