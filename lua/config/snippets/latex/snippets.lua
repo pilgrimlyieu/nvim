@@ -20,6 +20,8 @@ local cap = util.capture
 local captured_insert = util.captured_insert
 local matching_right_delimiter = h.matching_right_delimiter
 local visual_insert = util.visual_insert
+local text_choices = nodes.text_choices
+local text_choices_insert = nodes.text_choices_insert
 local environment_node = h.environment_node
 local math_environment_node = h.math_environment_node
 local matrix_node = h.matrix_node
@@ -116,7 +118,7 @@ function M.math_snippets()
     ),
     s(
       with_condition({ trig = "smash", name = "smash" }, condition),
-      fmta([[\smash[<>]{<>}]], { nodes.choice(1, { "t", "b", " " }), visual_insert(2) })
+      fmta([[\smash[<>]{<>}]], { text_choices(1, { "t", "b", " " }), visual_insert(2) })
     ),
     s(
       with_condition({ trig = "LR", name = "left right" }, condition),
@@ -184,7 +186,7 @@ function M.math_snippets()
     s(with_condition({ trig = "cancel", name = "cancel" }, condition), fmta([[\cancel{<>}]], { visual_insert(1) })),
     s(
       with_condition({ trig = "clr", name = "text color" }, condition),
-      fmta([[\textcolor{<>}{<>}]], { nodes.choice(1, { "ff0099", "da6904", "05aa94" }), visual_insert(2) })
+      fmta([[\textcolor{<>}{<>}]], { text_choices_insert(1, { "ff0099", "da6904", "05aa94" }), visual_insert(2) })
     ),
     s(with_condition({ trig = "bar", name = "bar" }, condition), fmta([[\bar{<>}]], { visual_insert(1) })),
     s(with_condition({ trig = "hat", name = "hat" }, condition), fmta([[\hat{<>}]], { visual_insert(1) })),

@@ -25,6 +25,7 @@ local cap = util.capture
 local captured_insert = util.captured_insert
 local literal_autosnippet = util.literal_autosnippet
 local visual_insert = util.visual_insert
+local text_choices = nodes.text_choices
 local with_condition = conditions.with_condition
 local word_autosnippet = util.word_autosnippet
 
@@ -254,7 +255,7 @@ function M.math_snippets()
     ),
     s(
       with_condition({ trig = "op", name = "operator" }, condition),
-      fmt([[op("{}", limits: #{})]], { i(1, "lim"), nodes.choice(2, { "true", "false" }) })
+      fmt([[op("{}", limits: #{})]], { i(1, "lim"), text_choices(2, { "true", "false" }) })
     ),
     s(with_condition({ trig = "hat", name = "hat" }, condition), fmt("hat({})", { visual_insert(1) })),
     s(with_condition({ trig = "bar", name = "bar" }, condition), fmt("bar({})", { visual_insert(1) })),

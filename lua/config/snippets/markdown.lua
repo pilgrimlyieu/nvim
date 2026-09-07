@@ -23,6 +23,8 @@ local cap = util.capture
 local with_condition = conditions.with_condition
 local visual_insert = util.visual_insert
 local visual_transform_insert = util.visual_transform_insert
+local text_choices = nodes.text_choices
+local text_choices_insert = nodes.text_choices_insert
 
 ---Build a GitHub-flavored Markdown table.
 ---@param align "plain"|"left"|"right"|"center"
@@ -292,7 +294,7 @@ function M.snippets()
     ),
     s(
       with_condition({ trig = "todo", name = "todo" }, conditions.with_line_begin(condition)),
-      fmt("- [{}] {}", { nodes.choice(1, { "x", " " }), i(2) })
+      fmt("- [{}] {}", { text_choices(1, { "x", " " }), i(2) })
     ),
     s(
       with_condition(
@@ -328,7 +330,7 @@ function M.snippets()
       t("<!-- {{{ "),
       i(1, "code"),
       t({ " -->", "```" }),
-      nodes.choice(2, { "bash", "rust", "python", "c", "cpp", "typescript", "javascript" }),
+      text_choices_insert(2, { "bash", "rust", "python", "c", "cpp", "typescript", "javascript" }),
       t({ "", "" }),
       visual_insert(3),
       t({ "", "```", "<!-- }}} -->" }),
@@ -593,7 +595,7 @@ tags: {}
           i(2),
           d(3, dynamic_insert(front_matter_draft)),
           d(4, dynamic_insert(front_matter_comments)),
-          nodes.choice(5, { "true", "false" }),
+          text_choices(5, { "true", "false" }),
           i(6),
           i(7),
           i(8),
@@ -623,7 +625,7 @@ tags: {}
           i(2),
           d(3, dynamic_insert(front_matter_draft)),
           d(4, dynamic_insert(front_matter_comments)),
-          nodes.choice(5, { "true", "false" }),
+          text_choices(5, { "true", "false" }),
           i(6),
           i(7),
           i(8),
@@ -651,7 +653,7 @@ tags: {}
         [[!!! {} {}
     {}]],
         {
-          nodes.choice(1, { "note", "info", "warning", "danger", "example", "quote", "tip", "memo", "test" }),
+          text_choices(1, { "note", "info", "warning", "danger", "example", "quote", "tip", "memo", "test" }),
           i(2, [[""]]),
           visual_insert(3),
         }
@@ -679,7 +681,7 @@ tags: {}
       with_condition({ trig = "label", name = "Hexo label" }, condition),
       fmta(
         [[{{% label <> @<> %}}]],
-        { nodes.choice(1, { "default", "primary", "success", "info", "warning", "danger" }), visual_insert(2) }
+        { text_choices(1, { "default", "primary", "success", "info", "warning", "danger" }), visual_insert(2) }
       )
     ),
     s(

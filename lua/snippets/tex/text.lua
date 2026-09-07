@@ -13,8 +13,10 @@ local text_math = require("config.snippets.text_math")
 local s = ls.snippet
 local i = ls.insert_node
 local t = ls.text_node
+
 local with_condition = conditions.with_condition
 local visual_insert = util.visual_insert
+local text_choices_insert = nodes.text_choices_insert
 
 local text = conditions.text
 local line_text = conditions.with_line_begin(text)
@@ -88,7 +90,7 @@ local snippets = {
 \end{minted}
 % }}}
 <>]],
-      { i(1), nodes.choice(2, { "python", "cpp", "c" }), visual_insert(3), i(0) }
+      { i(1), text_choices_insert(2, { "python", "cpp", "c" }), visual_insert(3), i(0) }
     )
   ),
   s(with_condition({ trig = "cc", name = "inline code" }, text), fmta([[\texttt{<>} ]], { visual_insert(1) })),
