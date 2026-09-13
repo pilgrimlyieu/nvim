@@ -11,6 +11,20 @@ return {
         end,
         desc = "Flash Treesitter",
       },
+      {
+        "R",
+        mode = "o",
+        function()
+          -- https://github.com/folke/flash.nvim/issues/380#issuecomment-3255575807
+          local register = vim.v.register
+          require("flash").treesitter_search({
+            action = function(match, state)
+              require("flash.jump").remote_op(match, state, register)
+            end,
+          })
+        end,
+        desc = "Remote Treesitter Flash",
+      },
     },
     init = function()
       local function flash_hl()

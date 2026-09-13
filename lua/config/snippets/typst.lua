@@ -289,7 +289,7 @@ function M.math_autosnippets()
       with_condition({ trig = "//", wordTrig = false, name = "fraction", snippetType = "autosnippet" }, condition),
       fmt("frac({}, {})", { visual_insert(1), i(2) })
     ),
-    -- TODO: not work if there's no chars after cursor
+    -- FIXME: not work if there's no chars after cursor
     s(
       with_condition({
         trig = "/",
