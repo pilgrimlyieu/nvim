@@ -10,5 +10,6 @@ if not enabled("typst_math") then
 end
 
 local typst = require("config.snippets.typst")
+local util = require("config.snippets.util")
 
-return typst.math_snippets(), typst.math_autosnippets()
+return util.qualify("Typst", typst.math_snippets(), typst.math_autosnippets())

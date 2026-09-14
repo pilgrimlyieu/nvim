@@ -1,6 +1,7 @@
 ---LeetCode 练习
 
 local ls = require("luasnip")
+local util = require("config.snippets.util")
 
 local s = ls.snippet
 local i = ls.insert_node
@@ -9,7 +10,7 @@ local c = ls.choice_node
 local sn = ls.snippet_node
 
 local snippets = {
-  s("cd", {
+  s({ trig = "cd", name = "study card" }, {
     t("// @card "),
     c(1, {
       t("hint"),
@@ -20,7 +21,7 @@ local snippets = {
     t({ "", "// " }),
     i(0),
   }),
-  s("alt", {
+  s({ trig = "alt", name = "alternative solution" }, {
     t("// @alt "),
     i(1, "解法名"),
     t({ "", "// " }),
@@ -31,9 +32,9 @@ local snippets = {
     i(0),
     t({ "", "};", "// @alt end" }),
   }),
-  s("nodbg", t("#define DBG(...) ((void)0)")),
+  s({ trig = "nodbg", name = "disable debug macro" }, t("#define DBG(...) ((void)0)")),
 }
 
 local autosnippets = {}
 
-return snippets, autosnippets
+return util.qualify("C++", snippets, autosnippets)

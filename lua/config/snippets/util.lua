@@ -1,4 +1,4 @@
----Shared LuaSnip constructors and visual selection.
+---Shared LuaSnip constructors, names, and visual selection.
 
 local M = {}
 local ls = require("luasnip")
@@ -234,6 +234,24 @@ function M.exact_cycle_engine(values)
       return nil
     end
   end
+end
+
+---Qualify fresh definitions at the loader boundary; explicit identity keys stay unchanged.
+---@param namespace string
+---@param snippets SnipSnippet[]
+---@param autosnippets SnipSnippet[]
+---@return SnipSnippet[], SnipSnippet[]
+function M.qualify(namespace, snippets, autosnippets)
+  local function apply(list, default_type)
+    for _, snippet in ipairs(list) do
+      local kind = snippet.snippetType or default_type
+      snippet.name = namespace .. ": " .. snippet.name .. (kind == "autosnippets" and " (auto)" or "")
+    end
+  end
+
+  apply(snippets, "snippets")
+  apply(autosnippets, "autosnippets")
+  return snippets, autosnippets
 end
 
 return M

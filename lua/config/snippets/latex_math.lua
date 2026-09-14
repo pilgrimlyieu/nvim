@@ -1,5 +1,6 @@
 ---Assemble fresh LaTeX nodes for each Markdown/TeX loader invocation.
 local enabled = require("config.snippets.groups")
+local util = require("config.snippets.util")
 local M = {}
 
 ---@param opts? { markdown_reference?: boolean }
@@ -18,7 +19,7 @@ function M.load(opts)
   if opts and opts.markdown_reference and enabled("markdown_math_reference") then
     vim.list_extend(snippets, require("config.snippets.markdown").math_reference_snippets())
   end
-  return snippets, autosnippets
+  return util.qualify("LaTeX", snippets, autosnippets)
 end
 
 return M

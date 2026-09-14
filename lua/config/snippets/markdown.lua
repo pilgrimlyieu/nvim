@@ -380,7 +380,7 @@ function M.snippets()
     s(with_condition({ trig = "bb", name = "bold" }, condition), fmt("**{}**", { visual_insert(1) })),
     s(with_condition({ trig = "bi", name = "bold italic" }, condition), fmt("***{}***", { visual_insert(1) })),
     s(with_condition({ trig = "mm", name = "mark" }, condition), fmt("=={}==", { visual_insert(1) })),
-    s(with_condition({ trig = "==", name = "mark" }, condition), fmt("=={}==", { visual_insert(1) })),
+    s(with_condition({ trig = "==", name = "mark equals alias" }, condition), fmt("=={}==", { visual_insert(1) })),
     s(with_condition({ trig = "ss", name = "strike" }, condition), fmt("~~{}~~", { visual_insert(1) })),
     s(with_condition({ trig = "uu", name = "underline" }, condition), fmt("<u>{}</u>", { visual_insert(1) })),
     s(with_condition({ trig = "/.", name = "comment" }, condition), fmt("<!-- {} -->", { visual_insert(1) })),

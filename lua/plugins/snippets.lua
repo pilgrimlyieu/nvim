@@ -20,6 +20,7 @@
 ---active.
 
 local snippet_root = vim.fn.stdpath("config") .. "/lua/snippets"
+local usage_enabled = vim.g.config_snippet_usage ~= false
 local choice_hint_ns = vim.api.nvim_create_namespace("config_luasnip_choice_hint")
 local select_cut_keys =
   [[<Esc><cmd>lua require("luasnip.util.select").pre_yank("z")<Cr>gv"zs<cmd>lua require("luasnip.util.select").post_yank("z")<Cr>]]
@@ -61,6 +62,7 @@ local delimiters = {
 ---@field enable_autosnippets? boolean
 ---@field region_check_events? string|string[]
 ---@field delete_check_events? string|string[]
+---@field loaders_store_source? boolean
 ---@field ext_opts? ConfigLuaSnipExtOpts
 
 ---@class ConfigBlinkLuaSnipProviderOpts
@@ -525,10 +527,12 @@ return {
     "L3MON4D3/LuaSnip",
     lazy = true,
     event = "InsertEnter",
+    cmd = usage_enabled and "SnippetStats" or nil,
     ---@param opts ConfigLuaSnipOpts
     ---@return ConfigLuaSnipOpts
     opts = function(_, opts)
       opts.enable_autosnippets = false
+      opts.loaders_store_source = usage_enabled
       opts.region_check_events = "CursorMoved,CursorHold"
       opts.delete_check_events = "InsertLeave"
       configure_node_hints(opts)
@@ -539,6 +543,9 @@ return {
       local luasnip = require("luasnip")
       luasnip.setup(opts)
 
+      if usage_enabled then
+        require("config.snippet_usage").setup()
+      end
       load_project_snippets()
       setup_guarded_autosnippets()
       setup_choice_hint()

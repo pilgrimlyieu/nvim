@@ -1,6 +1,7 @@
 ---Snippets available in every filetype.
 
 local ls = require("luasnip")
+local util = require("config.snippets.util")
 
 local s = ls.snippet
 local f = ls.function_node
@@ -16,14 +17,14 @@ local function now_minute()
 end
 
 local snippets = {
-  s("dt", {
+  s({ trig = "dt", name = "date" }, {
     f(today),
   }),
-  s("dtt", {
+  s({ trig = "dtt", name = "date and time" }, {
     f(now_minute),
   }),
 }
 
 local autosnippets = {}
 
-return snippets, autosnippets
+return util.qualify("Global", snippets, autosnippets)

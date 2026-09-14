@@ -6,5 +6,6 @@ if not enabled("typst_text") then
 end
 
 local typst = require("config.snippets.typst")
+local util = require("config.snippets.util")
 
-return typst.text_snippets(), typst.text_autosnippets()
+return util.qualify("Typst", typst.text_snippets(), typst.text_autosnippets())

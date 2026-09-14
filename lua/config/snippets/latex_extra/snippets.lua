@@ -142,7 +142,7 @@ function M.math_snippets()
     literal("pp", [[\partial ]], "partial", condition),
 
     s(
-      with_condition({ trig = [[\)]], name = "parentheses", wordTrig = false }, condition),
+      with_condition({ trig = [[\)]], name = "parentheses backslash alias", wordTrig = false }, condition),
       fmta([[\left( <> \right)<>]], { visual_insert(1), i(0) })
     ),
     s(
@@ -150,11 +150,11 @@ function M.math_snippets()
       fmta([[\left( <> \right)<>]], { visual_insert(1), i(0) })
     ),
     s(
-      with_condition({ trig = [=[\]]=], name = "brackets", wordTrig = false }, condition),
+      with_condition({ trig = [=[\]]=], name = "brackets backslash alias", wordTrig = false }, condition),
       fmta([=[\left[ <> \right]<>]=], { visual_insert(1), i(0) })
     ),
     s(
-      with_condition({ trig = [[\}]], name = "braces", wordTrig = false }, condition),
+      with_condition({ trig = [[\}]], name = "braces backslash alias", wordTrig = false }, condition),
       fmta([[\left\lbrace <> \right\rbrace<>]], { visual_insert(1), i(0) })
     ),
     s(
@@ -188,7 +188,7 @@ function M.math_snippets()
       fmta([[\fcolorbox{#FF69B4}{trasparent}{$<>$}<>]], { visual_insert(1), i(0) })
     ),
     s(
-      with_condition({ trig = "pha", name = "phantom" }, condition),
+      with_condition({ trig = "pha", name = "phantom wrapper" }, condition),
       fmta([[\phantom{<>}<>]], { visual_insert(1), i(0) })
     ),
     s(
@@ -196,11 +196,11 @@ function M.math_snippets()
       fmta([[\hphantom{<>}<>]], { visual_insert(1), i(0) })
     ),
     s(
-      with_condition({ trig = "flr", name = "floor" }, condition),
+      with_condition({ trig = "flr", name = "floor alias" }, condition),
       fmta([[\left\lfloor <> \right\rfloor<>]], { visual_insert(1), i(0) })
     ),
     s(
-      with_condition({ trig = "cil", name = "ceil" }, condition),
+      with_condition({ trig = "cil", name = "ceil alias" }, condition),
       fmta([[\left\lceil <> \right\rceil<>]], { visual_insert(1), i(0) })
     ),
     s(with_condition({ trig = "(%d%d?%d?%d?)rmn", trigEngine = "pattern", name = "roman number" }, condition), {

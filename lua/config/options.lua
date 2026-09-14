@@ -10,6 +10,9 @@ vim.o.showbreak = " ↪"
 vim.g.snacks_animate = false
 vim.g.trouble_lualine = false
 
+-- Uncomment to disable snippet usage statistics; restart Neovim to apply.
+-- vim.g.config_snippet_usage = false
+
 local opt = vim.opt
 
 opt.spelllang = "en_us,cjk"

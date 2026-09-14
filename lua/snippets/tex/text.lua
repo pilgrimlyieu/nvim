@@ -227,4 +227,4 @@ local autosnippets = {
   ),
 }
 
-return snippets, autosnippets
+return util.qualify("TeX", snippets, autosnippets)

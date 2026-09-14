@@ -4,6 +4,7 @@
 ---LaTeX math snippets live in `latex_math.lua` so they can share the
 ---math-scope conditions with TeX buffers.
 local markdown = require("config.snippets.markdown")
+local util = require("config.snippets.util")
 
 local snippets = {}
 
@@ -17,4 +18,4 @@ for _, build in ipairs({
   vim.list_extend(snippets, build())
 end
 
-return snippets, markdown.autosnippets()
+return util.qualify("Markdown", snippets, markdown.autosnippets())

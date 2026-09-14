@@ -108,8 +108,11 @@ function M.math_snippets()
     s(with_condition({ trig = "cases", name = "cases" }, condition), { d(1, math_environment_node("cases")) }),
     s(with_condition({ trig = "align", name = "aligned" }, condition), { d(1, math_environment_node("align")) }),
     s(with_condition({ trig = "txt", name = "text" }, condition), fmta([[\text{<>}]], { visual_insert(1) })),
-    s(with_condition({ trig = "text", name = "text" }, condition), fmta([[\text{<>}]], { visual_insert(1) })),
-    s(with_condition({ trig = "tt", name = "text" }, condition), fmta([[\text{<>}]], { visual_insert(1) })),
+    s(
+      with_condition({ trig = "text", name = "text word alias" }, condition),
+      fmta([[\text{<>}]], { visual_insert(1) })
+    ),
+    s(with_condition({ trig = "tt", name = "text short alias" }, condition), fmta([[\text{<>}]], { visual_insert(1) })),
     s(with_condition({ trig = "ce", name = "chemistry" }, not_chem_condition), fmta([[\ce{<>}]], { visual_insert(1) })),
     s(with_condition({ trig = "pu", name = "unit" }, not_unit_condition), fmta([[\pu{<>}]], { visual_insert(1) })),
     s(
