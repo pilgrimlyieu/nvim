@@ -1,5 +1,5 @@
 vim.opt.clipboard = "unnamedplus"
-if vim.fn.has("wsl") and not vim.g.vscode then
+if vim.fn.has("wsl") == 1 and not vim.g.vscode and not vim.g.neovide then
   vim.g.clipboard = {
     name = "OSC52",
     copy = {

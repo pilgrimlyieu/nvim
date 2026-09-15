@@ -4,6 +4,8 @@
 
 vim.o.background = "dark"
 
+vim.o.guifont = "JetBrainsMono Nerd Font:h15"
+
 vim.o.breakindent = true
 vim.o.showbreak = " ↪"
 
@@ -44,3 +46,6 @@ do
 end
 
 require("config/clipboard")
+if vim.g.neovide then
+  require("config/neovide")
+end
