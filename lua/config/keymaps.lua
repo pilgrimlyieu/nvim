@@ -6,8 +6,9 @@ vim.keymap.set("i", "jk", "<Esc>", { silent = true, desc = "Escape insert mode" 
 vim.keymap.set("i", "kj", "<Esc>", { silent = true, desc = "Escape insert mode" })
 vim.keymap.set("n", "U", "<C-r>", { silent = true, desc = "Redo" })
 vim.keymap.set("", ";", ":", { desc = "Command mode" })
-vim.keymap.set("", ":", ",", { silent = true, desc = "Repeat opposite f/t/F/T" })
-vim.keymap.set("", ",", ";", { silent = true, desc = "Repeat f/t/F/T" })
+-- Flash owns n/x/o repeats; preserve the existing Select-mode mappings.
+vim.keymap.set("s", ":", ",", { silent = true, desc = "Repeat opposite f/t/F/T" })
+vim.keymap.set("s", ",", ";", { silent = true, desc = "Repeat f/t/F/T" })
 vim.keymap.set("", "`", "'", { silent = true, desc = "First non-blank location mark" })
 vim.keymap.set("", "'", "`", { silent = true, desc = "Precise location" })
 vim.keymap.set("", "H", "0", { silent = true, desc = "Begining of the line" })

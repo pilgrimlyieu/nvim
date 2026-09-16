@@ -41,17 +41,29 @@ return {
       vim.api.nvim_create_autocmd("ColorScheme", { callback = flash_hl })
       flash_hl()
     end,
-    ---@type Flash.Config
-    opts = {
-      modes = {
-        search = {
-          enabled = true,
+    opts = function()
+      local default_char_config = require("flash.config").modes.char.config or function() end
+      local user_char_config = require("config.punctuation").flash_char
+      ---@type Flash.Config
+      return {
+        modes = {
+          char = {
+            config = function(o)
+              default_char_config(o)
+              user_char_config(o)
+            end,
+            -- Match config/keymaps.lua: ; opens commands, ,/: repeat motions.
+            keys = { "f", "F", "t", "T", [";"] = ",", [","] = ":" },
+          },
+          search = {
+            enabled = true,
+          },
         },
-      },
-      jump = {
-        autojump = true,
-      },
-    },
+        jump = {
+          autojump = true,
+        },
+      }
+    end,
   },
   {
     "rainzm/flash-zh.nvim",
@@ -83,5 +95,42 @@ return {
   {
     "nvim-mini/mini.pairs",
     enabled = false,
+  },
+  {
+    "nvim-mini/mini.ai",
+    opts = function(_, opts)
+      opts.custom_textobjects = opts.custom_textobjects or {}
+      for _, pair in ipairs({
+        { "（", "）" },
+        { "【", "】" },
+        { "《", "》" },
+        { "〈", "〉" },
+        { "‘", "’" },
+        { "“", "”" },
+        { "「", "」" },
+        { "『", "』" },
+      }) do
+        local left, right = pair[1], pair[2]
+        local spec = { left .. "().-()" .. right } -- assume nested pairs are not common
+        opts.custom_textobjects[left] = spec
+        opts.custom_textobjects[right] = spec
+      end
+      opts.custom_textobjects.B = {
+        {
+          "（().-()）",
+          "【().-()】",
+          "《().-()》",
+          "〈().-()〉",
+        },
+      }
+      opts.custom_textobjects.Q = {
+        {
+          "‘().-()’",
+          "“().-()”",
+          "「().-()」",
+          "『().-()』",
+        },
+      }
+    end,
   },
 }

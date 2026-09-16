@@ -61,6 +61,7 @@ return {
         end,
         set = function(state)
           ime_locked_on = state
+          -- Unlocking keeps IME available until the next configured mode event.
           if ime_locked_on then
             vim.g.neovide_input_ime = true
           end

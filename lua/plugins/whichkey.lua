@@ -17,6 +17,14 @@ return {
       opts.icons = opts.icons or {}
       opts.icons.rules = opts.icons.rules or {}
 
+      -- mini.ai
+      vim.list_extend(opts.spec, {
+        { "aB", desc = "full-width ()[]<>", mode = { "x", "o" } },
+        { "iB", desc = "full-width ()[]<>", mode = { "x", "o" } },
+        { "aQ", desc = "full-width quote", mode = { "x", "o" } },
+        { "iQ", desc = "full-width quote", mode = { "x", "o" } },
+      })
+
       local function remove_group(spec, lhs)
         for index = #spec, 1, -1 do
           local item = spec[index]
