@@ -41,9 +41,10 @@ return {
       }
 
       for _, event in ipairs(events) do
+        ---@type string|string[]
         local pattern = "*"
         if event:match("^Cmdline") then
-          pattern = "[/\\?]" -- 仅匹配搜索模式
+          pattern = { "\\/", "\\?" } -- 仅匹配搜索模式
         end
 
         vim.api.nvim_create_autocmd(event, {
@@ -64,7 +65,7 @@ return {
             vim.g.neovide_input_ime = true
           end
         end,
-      }):map("<leader>um")
+      }):map("<leader>uM")
 
       return opts
     end,

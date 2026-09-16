@@ -4,7 +4,7 @@
 
 vim.o.background = "dark"
 
-vim.o.guifont = "JetBrainsMono Nerd Font:h15"
+vim.o.guifont = "JetBrainsMono Nerd Font,微软雅黑:h15"
 
 vim.o.breakindent = true
 vim.o.showbreak = " ↪"
