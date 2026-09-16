@@ -30,12 +30,13 @@ return {
         return ts_util._queries[key]
       end
 
-      opts.ensure_installed = opts.ensure_installed or {}
+      opts.ensure_installed = vim.tbl_filter(function(parser)
+        return parser ~= "typst"
+      end, opts.ensure_installed or {})
       for _, parser in ipairs({
         "html",
         "markdown",
         "markdown_inline",
-        "typst",
         "vue",
         "css",
         "scss",

@@ -286,10 +286,9 @@ function M.math_autosnippets()
   local condition = conditions.math
   local autos = {
     s(
-      with_condition({ trig = "//", wordTrig = false, name = "fraction", snippetType = "autosnippet" }, condition),
+      with_condition({ trig = "/.", wordTrig = false, name = "fraction", snippetType = "autosnippet" }, condition),
       fmt("frac({}, {})", { visual_insert(1), i(2) })
     ),
-    -- FIXME: not work if there's no chars after cursor
     s(
       with_condition({
         trig = "/",

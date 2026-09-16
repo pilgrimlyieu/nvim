@@ -1,5 +1,5 @@
 ---Cursor semantics shared by Markdown, TeX and Typst snippets.
----Tree-sitter owns Markdown/Typst syntax; VimTeX owns TeX syntax.
+---Tree-sitter owns Markdown and Typst; VimTeX owns TeX.
 local M = {}
 
 ---@class SnipScope
@@ -16,7 +16,6 @@ local LATEX_TEXT_COMMANDS = {
 
 local MATH_NODES = { inline_formula = true, displayed_equation = true, math_environment = true }
 local CODE_NODES = { fenced_code_block = true, indented_code_block = true, code_span = true }
-local TYPST_KINDS = { math = "math", comment = "comment", raw_span = "code", raw_blck = "code" }
 local TEXT = { kind = "text" }
 
 ---@type table<integer, { tick: integer, row: integer, col: integer, value: SnipScope }>
@@ -93,9 +92,8 @@ end
 
 ---@param row integer
 ---@param col integer
----@param filetype string
 ---@return SnipScope
-local function treesitter_scope(row, col, filetype)
+local function markdown_scope(row, col)
   local parser = ready_parser(row)
   if not parser then
     return TEXT
@@ -107,31 +105,16 @@ local function treesitter_scope(row, col, filetype)
   end
   local outer = root:root():named_descendant_for_range(unpack(range))
 
-  if filetype == "markdown" then
-    -- Outer code always wins over injected Markdown or LaTeX example content.
-    if ancestor(outer, CODE_NODES) then
-      return { kind = "code" }
-    end
-    if ancestor(outer, { minus_metadata = true }) then
-      return { kind = "frontmatter" }
-    end
+  -- Outer code always wins over injected Markdown or LaTeX example content.
+  if ancestor(outer, CODE_NODES) then
+    return { kind = "code" }
+  end
+  if ancestor(outer, { minus_metadata = true }) then
+    return { kind = "frontmatter" }
   end
 
   local language, node = deepest(parser, root, range)
   local lang = language:lang()
-  if filetype == "typst" then
-    if lang ~= "typst" then
-      return { kind = "code" }
-    end
-    while node do
-      if TYPST_KINDS[node:type()] then
-        return { kind = TYPST_KINDS[node:type()] }
-      end
-      node = node:parent()
-    end
-    return TEXT
-  end
-
   if lang == "markdown" then
     return TEXT
   elseif lang == "markdown_inline" then
@@ -196,6 +179,9 @@ end
 ---@return SnipScope
 function M.get()
   local buf = vim.api.nvim_get_current_buf()
+  if vim.bo[buf].filetype == "typst" then
+    return require("typst_editor.scope").get()
+  end
   local cursor = vim.api.nvim_win_get_cursor(0)
   local row, col = cursor[1] - 1, cursor[2]
   local tick = vim.api.nvim_buf_get_changedtick(buf)
@@ -206,8 +192,8 @@ function M.get()
 
   local ft = vim.bo[buf].filetype
   local value = TEXT
-  if ft == "markdown" or ft == "typst" then
-    value = treesitter_scope(row, col, ft)
+  if ft == "markdown" then
+    value = markdown_scope(row, col)
   elseif ft == "tex" then
     value = tex_scope()
   end
