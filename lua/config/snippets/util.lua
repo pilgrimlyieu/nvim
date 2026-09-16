@@ -8,6 +8,7 @@ local triggers = require("config.snippets.triggers")
 local d = ls.dynamic_node
 local f = ls.function_node
 local i = ls.insert_node
+local isn = ls.indent_snippet_node
 local s = ls.snippet
 local sn = ls.snippet_node
 local t = ls.text_node
@@ -27,13 +28,18 @@ local function has_text(value)
   return false
 end
 
----Return the last LuaSnip visual selection as lines, with an optional fallback.
+---Return the visual selection with common indentation removed.
+---Relative indentation is preserved; the destination node supplies its own indent.
 ---@param snip SnipSnippet
 ---@param default? string|string[]
 ---@return string[]
 function M.selected_lines(snip, default)
   local env = snip.snippet.env
-  local selected = env.LS_SELECT_RAW or env.TM_SELECTED_TEXT
+  local selected = env.LS_SELECT_DEDENT
+  -- LuaSnip supplies {} for an unset variable, including raw-only env overrides.
+  if selected == nil or (type(selected) == "table" and #selected == 0) then
+    selected = env.LS_SELECT_RAW or env.TM_SELECTED_TEXT
+  end
 
   if has_text(selected) then
     if type(selected) == "table" then
@@ -54,6 +60,25 @@ function M.selected_lines(snip, default)
   return { "" }
 end
 
+---Indent continuation lines to the placeholder's line, including template indent.
+---LuaSnip normally only inherits the indent at the trigger, so a literal indent
+---before a dynamic node (e.g. an admonition body) would only affect its first line.
+---@param parent SnipSnippet
+---@param index integer
+---@param text string|string[]
+---@return SnipNode
+local function indented_visual(parent, index, text)
+  local mark = parent.insert_nodes[index].mark
+  local indent = parent.indentstr
+  -- Completion previews evaluate dynamic nodes before buffer marks exist.
+  if mark then
+    local pos = mark:pos_begin_end()
+    local line = vim.api.nvim_buf_get_lines(0, pos[1], pos[1] + 1, false)[1]
+    indent = line:sub(1, pos[2]):match("^%s*")
+  end
+  return isn(nil, { i(1, text) }, indent)
+end
+
 ---Create an editable node seeded from the last captured visual selection.
 ---
 ---Use this instead of directly translating UltiSnips' visual placeholder. The selection
@@ -64,7 +89,7 @@ end
 ---@return SnipNode
 function M.visual_insert(index, default)
   return d(index, function(_, snip)
-    return sn(nil, { i(1, M.selected_lines(snip, default)) })
+    return indented_visual(snip, index, M.selected_lines(snip, default))
   end)
 end
 
@@ -77,7 +102,7 @@ end
 ---@return SnipNode
 function M.visual_transform_insert(index, transform, default)
   return d(index, function(_, snip)
-    return sn(nil, { i(1, transform(M.selected_lines(snip, default), snip)) })
+    return indented_visual(snip, index, transform(M.selected_lines(snip, default), snip))
   end)
 end
 

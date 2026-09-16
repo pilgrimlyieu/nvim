@@ -19,8 +19,11 @@
 ---@field captures string[] Regex/custom trigger captures for this expansion.
 ---@field env SnipSnippetEnv TextMate/LuaSnip environment available in callbacks.
 ---@field snippet SnipSnippet Root snippet; points to self on the root.
+---@field insert_nodes table<integer, LuaSnip.Node> Nodes indexed by jump position.
+---@field indentstr string Parent indentation supplied by LuaSnip.
 
 ---@class SnipSnippetEnv
+---@field LS_SELECT_DEDENT? string|string[] Visual text with common indentation removed.
 ---@field LS_SELECT_RAW? string|string[] Visual text captured by LuaSnip.
 ---@field TM_SELECTED_TEXT? string|string[] TextMate-compatible visual text.
 

@@ -59,6 +59,7 @@ local delimiters = {
 ---@field [integer] ConfigLuaSnipExtOpt Options keyed by LuaSnip node type id.
 
 ---@class ConfigLuaSnipOpts
+---@field history? boolean
 ---@field enable_autosnippets? boolean
 ---@field region_check_events? string|string[]
 ---@field delete_check_events? string|string[]
@@ -531,6 +532,8 @@ return {
     ---@param opts ConfigLuaSnipOpts
     ---@return ConfigLuaSnipOpts
     opts = function(_, opts)
+      -- Drop LazyVim's history override to keep LuaSnip's default snippet lifetime.
+      opts.history = nil
       opts.enable_autosnippets = false
       opts.loaders_store_source = usage_enabled
       opts.region_check_events = "CursorMoved,CursorHold"
