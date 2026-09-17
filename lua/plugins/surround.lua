@@ -47,12 +47,12 @@ return {
     opts = {
       custom_surroundings = custom,
       mappings = {
-        add = "Sa",
-        delete = "Sd",
-        find = "Sf",
-        find_left = "SF",
-        highlight = "Sh",
-        replace = "Sr",
+        add = "sa",
+        delete = "sd",
+        find = "sf",
+        find_left = "sF",
+        highlight = "sh",
+        replace = "sr",
       },
       search_method = "cover_or_nearest",
     },

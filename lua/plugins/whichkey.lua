@@ -80,12 +80,12 @@ return {
         { "<leader>j", group = "jj" },
         { "<leader>jh", group = "jj diff" },
         { "<leader>jb", group = "jj bookmark" },
-        { "S", group = "surround", mode = { "n", "x" } },
+        { "s", group = "surround", mode = { "n", "x" } },
       })
 
       opts.triggers = {
         { "<auto>", mode = "nixsotc" },
-        { "S", mode = "nv" },
+        { "s", mode = "nv" },
       }
 
       return opts
