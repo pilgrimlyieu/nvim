@@ -39,11 +39,6 @@ function M.math_snippets()
 
   local snippets = {
     s(
-      with_condition({ trig = "sqrt", name = "root" }, condition),
-      fmta([[\sqrt[<>]{<>}]], { i(1, "3"), visual_insert(2) })
-    ),
-    s(with_condition({ trig = "gen", name = "square root" }, condition), fmta([[\sqrt{<>}]], { visual_insert(1) })),
-    s(
       with_condition({ trig = "op", name = "operator name" }, condition),
       fmta([[\operatorname{<>}]], { visual_insert(1) })
     ),
@@ -116,10 +111,6 @@ function M.math_snippets()
     s(with_condition({ trig = "ce", name = "chemistry" }, not_chem_condition), fmta([[\ce{<>}]], { visual_insert(1) })),
     s(with_condition({ trig = "pu", name = "unit" }, not_unit_condition), fmta([[\pu{<>}]], { visual_insert(1) })),
     s(
-      with_condition({ trig = "buji", name = "complement" }, condition),
-      fmta([[\complement_{<>}]], { visual_insert(1) })
-    ),
-    s(
       with_condition({ trig = "smash", name = "smash" }, condition),
       fmta([[\smash[<>]{<>}]], { text_choices(1, { "t", "b", " " }), visual_insert(2) })
     ),
@@ -166,27 +157,16 @@ function M.math_snippets()
     ),
     s(with_condition({ trig = "bm", name = "bold math" }, condition), fmta([[\bm{<>}]], { visual_insert(1) })),
     s(with_condition({ trig = "tag", name = "tag" }, condition), fmta([[\tag{<>}]], { i(1) })),
-    s(with_condition({ trig = "=", wordTrig = false, name = "aligned equal" }, not_chem_condition), t("&=")),
+    s(
+      with_condition({ trig = "=", wordTrig = false, name = "aligned equal", priority = 100 }, not_chem_condition),
+      t("&=")
+    ),
     s(
       with_condition({ trig = "=", wordTrig = false, name = "chemical equal" }, chem_condition),
       fmta([[ \xlongequal[<>]{\enspace <>\enspace} ]], { i(1), i(2) })
     ),
     s(with_condition({ trig = "&=", wordTrig = false, name = "plain equal" }, condition), t("=")),
-    s(
-      with_condition({ trig = "_=", name = "long equal" }, condition),
-      fmta([[\xlongequal[<>]{<>}]], { visual_insert(1), i(2) })
-    ),
-    s(
-      with_condition({ trig = "_>", name = "long right arrow" }, condition),
-      fmta([[\xrightarrow[<>]{<>}]], { i(1), visual_insert(2) })
-    ),
-    s(
-      with_condition({ trig = "_<", name = "long left arrow" }, condition),
-      fmta([[\xleftarrow[<>]{<>}]], { i(1), visual_insert(2) })
-    ),
-    s(with_condition({ trig = "|_>", name = "long mapsto" }, condition), fmta([[\xmapsto{<>}]], { visual_insert(1) })),
     s(with_condition({ trig = "boxed", name = "boxed" }, condition), fmta([[\boxed{<>}]], { visual_insert(1) })),
-    s(with_condition({ trig = "cancel", name = "cancel" }, condition), fmta([[\cancel{<>}]], { visual_insert(1) })),
     s(
       with_condition({ trig = "clr", name = "text color" }, condition),
       fmta([[\textcolor{<>}{<>}]], { text_choices_insert(1, { "ff0099", "da6904", "05aa94" }), visual_insert(2) })

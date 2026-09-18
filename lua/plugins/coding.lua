@@ -44,7 +44,7 @@ return {
         ---@type string|string[]
         local pattern = "*"
         if event:match("^Cmdline") then
-          pattern = { "\\/", "\\?" } -- 仅匹配搜索模式
+          pattern = "[\\/\\?]" -- 仅匹配搜索模式
         end
 
         vim.api.nvim_create_autocmd(event, {

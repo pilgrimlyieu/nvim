@@ -29,16 +29,12 @@ function M.math_autosnippets()
   local condition = conditions.math
   return {
     s(
-      with_condition({ trig = ",i=", wordTrig = false, name = "given i", snippetType = "autosnippet" }, condition),
-      fmta([[,\,i=<>, <>, \dots, <>. <>]], { i(1, "1"), i(2, "2"), i(3, "n"), i(0) })
-    ),
-    s(
       with_condition({ trig = [[\)]], wordTrig = false, name = "parentheses", snippetType = "autosnippet" }, condition),
       fmta([[\left( <> \right)<>]], { visual_insert(1), i(0) })
     ),
     s(
       with_condition(
-        { trig = [[\bb]], wordTrig = false, name = "LaTeX parentheses", snippetType = "autosnippet" },
+        { trig = [[\bb]], wordTrig = false, name = "parentheses (\\bb)", snippetType = "autosnippet" },
         condition
       ),
       fmta([[\left( <> \right)<>]], { visual_insert(1), i(0) })
@@ -67,27 +63,11 @@ function M.math_autosnippets()
         { trig = [[\.]], wordTrig = false, name = "paragraph line break", snippetType = "autosnippet" },
         condition
       ),
-      t({ [[\\]], "", "" })
+      t({ [[\\]], "" })
     ),
     s(
       with_condition({ trig = "  !", wordTrig = false, name = "quad space", snippetType = "autosnippet" }, condition),
       t([[\quad ]])
-    ),
-    s(
-      with_condition({ trig = "pha", name = "phantom", snippetType = "autosnippet" }, condition),
-      fmta([[\phantom{<>}<>]], { visual_insert(1), i(0) })
-    ),
-    s(
-      with_condition({ trig = "hpha", name = "horizontal phantom", snippetType = "autosnippet" }, condition),
-      fmta([[\hphantom{<>}<>]], { visual_insert(1), i(0) })
-    ),
-    s(
-      with_condition({ trig = "flr", name = "floor", snippetType = "autosnippet" }, condition),
-      fmta([[\left\lfloor <> \right\rfloor<>]], { visual_insert(1), i(0) })
-    ),
-    s(
-      with_condition({ trig = "cil", name = "ceil", snippetType = "autosnippet" }, condition),
-      fmta([[\left\lceil <> \right\rceil<>]], { visual_insert(1), i(0) })
     ),
     s(
       with_condition({

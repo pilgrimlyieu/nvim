@@ -4,15 +4,11 @@
 ---public snippet groups live in snippets.lua and autos.lua.
 local ls = require("luasnip")
 local fmta = require("luasnip.extras.fmt").fmta
-local latex_helpers = require("config.snippets.latex.helpers")
 local conditions = require("config.snippets.conditions")
 local util = require("config.snippets.util")
 
 local s = ls.snippet
-local sn = ls.snippet_node
-local t = ls.text_node
 local f = ls.function_node
-local d = ls.dynamic_node
 
 local ACCENT_NAMES = { "bar", "hat", "vec" }
 local SHORT_ACCENT_COMMANDS = {
@@ -39,7 +35,6 @@ local ACCENT_POSTFIX_WINDOW = 80 -- target, optional script, and `bar`/`hat`/`ve
 local ANGLE_CONTENT_WINDOW = 80 -- one-line `<content>` delimiter shorthand.
 local BRACED_COMMAND_WINDOW = 180 -- command cycles that preserve one/two brace groups.
 local ANNOTATION_POSTFIX_WINDOW = 80 -- label plus `%^` / `%_` annotation suffix.
-local SYMBOLIC_MATRIX_WINDOW = 24 -- symbolic matrix shorthands ending in `.`.
 
 local cap = util.capture_nonempty
 local choose_next = util.choose_next
@@ -48,7 +43,6 @@ local cycle_engine = util.exact_cycle_engine
 local sorted_longest_first = util.sorted_longest_first
 local visual_insert = util.visual_insert
 local with_condition = conditions.with_condition
-local matrix_text_lines = latex_helpers.matrix_text_lines
 
 ---@param text string
 ---@param suffix string
@@ -368,105 +362,6 @@ local function annotation_autosnippet(name, suffix_pattern, suffix_text, command
   )
 end
 
----Render a symbolic matrix entry with row and column subscripts.
----@param prefix string
----@param row string
----@param col string
----@return string
-local function indexed(prefix, row, col)
-  return ("%s_{%s %s}"):format(prefix, row, col)
-end
-
----Match symbolic matrix shorthand for plain/diagonal/triangular matrices.
----@param kind "plain"|"diag"|"upper"|"lower"
----@return SnipTriggerEngine
-local function symbolic_matrix_engine(kind)
-  return function()
-    return function(line_to_cursor)
-      if not ends_with(line_to_cursor, ".") then
-        return nil
-      end
-
-      local text = line_to_cursor:sub(math.max(1, #line_to_cursor - SYMBOLIC_MATRIX_WINDOW))
-      local form, row, col, value
-
-      if kind == "plain" then
-        form, row, col, value = text:match("([mpbBvV])([%a])([%a])([%a]?)%.$")
-        if not form then
-          return nil
-        end
-        return form .. row .. col .. value .. ".", { form, row, col, value ~= "" and value or "a" }
-      end
-
-      local prefix = (kind == "diag" and "d" or kind == "upper" and "ut" or "lt")
-      form, row, value = text:match(prefix .. "([mpbBvV])([%a])([%a]?)%.$")
-      if not form then
-        return nil
-      end
-
-      local match = prefix .. form .. row .. value .. "."
-      return match, { form, row, value ~= "" and value or "a" }
-    end
-  end
-end
-
----Build a symbolic matrix node from captures produced by the matrix engine.
----@param kind "plain"|"diag"|"upper"|"lower"
----@return SnipNode
-local function symbolic_matrix_node(kind)
-  return d(1, function(_, snip)
-    local form = snip.captures[1]
-    local n1 = snip.captures[2]
-    local n2 = kind == "plain" and snip.captures[3] or snip.captures[2]
-    local value = kind == "plain" and snip.captures[4] or snip.captures[3]
-
-    local rows
-    if kind == "diag" then
-      rows = {
-        ("%s & 0 & \\cdots & 0 \\\\"):format(indexed(value, "1", "1")),
-        ("0 & %s & \\cdots & 0 \\\\"):format(indexed(value, "2", "2")),
-        "\\vdots & \\vdots & \\ddots & \\vdots \\\\",
-        ("0 & 0 & \\cdots & %s"):format(indexed(value, n1, n1)),
-      }
-    elseif kind == "upper" then
-      rows = {
-        ("%s & %s & \\cdots & %s \\\\"):format(
-          indexed(value, "1", "1"),
-          indexed(value, "1", "2"),
-          indexed(value, "1", n1)
-        ),
-        ("0 & %s & \\cdots & %s \\\\"):format(indexed(value, "2", "2"), indexed(value, "2", n1)),
-        "\\vdots & \\vdots & \\ddots & \\vdots \\\\",
-        ("0 & 0 & \\cdots & %s"):format(indexed(value, n1, n1)),
-      }
-    elseif kind == "lower" then
-      rows = {
-        ("%s & 0 & \\cdots & 0 \\\\"):format(indexed(value, "1", "1")),
-        ("%s & %s & \\cdots & 0 \\\\"):format(indexed(value, "2", "1"), indexed(value, "2", "2")),
-        "\\vdots & \\vdots & \\ddots & \\vdots \\\\",
-        ("%s & %s & \\cdots & %s"):format(indexed(value, n1, "1"), indexed(value, n1, "2"), indexed(value, n1, n1)),
-      }
-    else
-      rows = {
-        ("%s & %s & \\cdots & %s \\\\"):format(
-          indexed(value, "1", "1"),
-          indexed(value, "1", "2"),
-          indexed(value, "1", n2)
-        ),
-        ("%s & %s & \\cdots & %s \\\\"):format(
-          indexed(value, "2", "1"),
-          indexed(value, "2", "2"),
-          indexed(value, "2", n2)
-        ),
-        "\\vdots & \\vdots & \\ddots & \\vdots \\\\",
-        ("%s & %s & \\cdots & %s"):format(indexed(value, n1, "1"), indexed(value, n1, "2"), indexed(value, n1, n2)),
-      }
-    end
-
-    return sn(nil, { t(matrix_text_lines(form, rows)) })
-  end)
-end
-
 ---Render a small integer as kern-adjusted Roman numerals.
 ---@param number integer
 ---@return string?
@@ -515,7 +410,5 @@ return {
   cycle = cycle,
   braced_command_cycle = braced_command_cycle,
   annotation_autosnippet = annotation_autosnippet,
-  symbolic_matrix_engine = symbolic_matrix_engine,
-  symbolic_matrix_node = symbolic_matrix_node,
   roman = roman,
 }

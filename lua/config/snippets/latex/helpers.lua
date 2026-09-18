@@ -147,24 +147,6 @@ local function matrix_nodes(form, rows, cols)
   return nodes
 end
 
----Wrap prepared matrix row text in inline or display layout.
----@param form string
----@param rows string[]
----@return string[]
-local function matrix_text_lines(form, rows)
-  local env = matrix_env(form)
-  if scope.get().layout == "inline" then
-    return { "\\begin{" .. env .. "} " .. table.concat(rows, " ") .. " \\end{" .. env .. "}" }
-  end
-
-  local lines = { "\\begin{" .. env .. "}" }
-  for _, row in ipairs(rows) do
-    lines[#lines + 1] = DISPLAY_INDENT .. row
-  end
-  lines[#lines + 1] = "\\end{" .. env .. "}"
-  return lines
-end
-
 ---Builds a LaTeX matrix environment from triggers.
 ---@param _ SnipNodeArgs
 ---@param snip SnipSnippet
@@ -204,7 +186,6 @@ local function style_snippet(trigger, command, desc)
 end
 
 return {
-  matrix_text_lines = matrix_text_lines,
   matching_right_delimiter = matching_right_delimiter,
   environment_node = environment_node,
   math_environment_node = math_environment_node,

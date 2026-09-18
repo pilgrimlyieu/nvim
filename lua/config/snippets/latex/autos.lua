@@ -31,12 +31,6 @@ function M.math_autosnippets()
   local autos = {
     word_autosnippet("sqrt", fmta([[\sqrt[<>]{<>}]], { i(1, "3"), visual_insert(2) }), "root", condition),
     word_autosnippet("gen", fmta([[\sqrt{<>}]], { visual_insert(1) }), "square root", condition),
-    word_autosnippet(
-      "LR",
-      fmta([[\left<> <> \right<>]], { i(1, "("), visual_insert(2), f(matching_right_delimiter, { 1 }) }),
-      "left right",
-      condition
-    ),
     word_autosnippet("cancel", fmta([[\cancel{<>}]], { visual_insert(1) }), "cancel", condition),
     word_autosnippet("buji", fmta([[\complement_{<>}]], { visual_insert(1) }), "complement", condition),
     s(
@@ -86,30 +80,6 @@ function M.math_autosnippets()
       fmta([[\dfrac{<>}{<>}]], { cap(1), visual_insert(1) })
     ),
     s(
-      with_condition({ trig = "<=", wordTrig = false, name = "le", snippetType = "autosnippet" }, condition),
-      t([[\le ]])
-    ),
-    s(
-      with_condition({ trig = ">=", wordTrig = false, name = "ge", snippetType = "autosnippet" }, condition),
-      t([[\ge ]])
-    ),
-    s(
-      with_condition({ trig = "!=", wordTrig = false, name = "ne", snippetType = "autosnippet" }, condition),
-      t([[\ne ]])
-    ),
-    s(
-      with_condition({ trig = "...", wordTrig = false, name = "dots", snippetType = "autosnippet" }, condition),
-      t([[\dots]])
-    ),
-    s(
-      with_condition({ trig = "+-", wordTrig = false, name = "pm", snippetType = "autosnippet" }, condition),
-      t([[\pm ]])
-    ),
-    s(
-      with_condition({ trig = "-+", wordTrig = false, name = "mp", snippetType = "autosnippet" }, condition),
-      t([[\mp ]])
-    ),
-    s(
       with_condition({
         trig = "([%a])(%d)",
         trigEngine = "pattern",
@@ -140,12 +110,18 @@ function M.math_autosnippets()
   }
 
   local literal_autos = {
+    { "<=", [[\le ]], "le", { wordTrig = false } },
+    { ">=", [[\ge ]], "ge", { wordTrig = false } },
+    { "!=", [[\ne ]], "ne", { wordTrig = false } },
+    { "...", [[\dots ]], "dots", { wordTrig = false } },
+    { "+-", [[\pm ]], "pm", { wordTrig = false } },
+    { "-+", [[\mp ]], "mp", { wordTrig = false } },
     { "=>", [[\implies ]], "implies", { wordTrig = false } },
     { "==", [[\iff ]], "iff", { wordTrig = false } },
     { "->", [[\to ]], "to", { wordTrig = false } },
     { "<-", [[\gets ]], "gets", { wordTrig = false } },
     { "<>-", [[\gets]], "gets alias", { wordTrig = false } },
-    { "-->", [[\rightrightarrows ]], "uniform convergence", { wordTrig = false, priority = 200 } },
+    { "-->", [[\rightrightarrows ]], "uniform convergence", { wordTrig = false, priority = 1200 } },
     { "|->", [[\mapsto ]], "mapsto", { wordTrig = false } },
     { ":=", [[\coloneqq]], "definition", { wordTrig = false } },
     { ">>", [[\gg ]], "much greater", { wordTrig = false } },

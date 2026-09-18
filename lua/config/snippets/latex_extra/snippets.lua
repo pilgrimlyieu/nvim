@@ -24,8 +24,6 @@ local integral_engine = h.integral_engine
 local angle_content_engine = h.angle_content_engine
 local cycle = h.cycle
 local braced_command_cycle = h.braced_command_cycle
-local symbolic_matrix_engine = h.symbolic_matrix_engine
-local symbolic_matrix_node = h.symbolic_matrix_node
 local roman = h.roman
 local visual_insert = util.visual_insert
 
@@ -142,30 +140,6 @@ function M.math_snippets()
     literal("pp", [[\partial ]], "partial", condition),
 
     s(
-      with_condition({ trig = [[\)]], name = "parentheses backslash alias", wordTrig = false }, condition),
-      fmta([[\left( <> \right)<>]], { visual_insert(1), i(0) })
-    ),
-    s(
-      with_condition({ trig = [[\bb]], name = "LaTeX parentheses", wordTrig = false }, condition),
-      fmta([[\left( <> \right)<>]], { visual_insert(1), i(0) })
-    ),
-    s(
-      with_condition({ trig = [=[\]]=], name = "brackets backslash alias", wordTrig = false }, condition),
-      fmta([=[\left[ <> \right]<>]=], { visual_insert(1), i(0) })
-    ),
-    s(
-      with_condition({ trig = [[\}]], name = "braces backslash alias", wordTrig = false }, condition),
-      fmta([[\left\lbrace <> \right\rbrace<>]], { visual_insert(1), i(0) })
-    ),
-    s(
-      with_condition({ trig = [[\|]], name = "verticals", wordTrig = false }, condition),
-      fmta([[\left\lvert <> \right\rvert<>]], { visual_insert(1), i(0) })
-    ),
-    s(
-      with_condition({ trig = [[\>]], name = "angle brackets", wordTrig = false }, condition),
-      fmta([[\left\langle <> \right\rangle<>]], { visual_insert(1), i(0) })
-    ),
-    s(
       with_condition({
         trig = "angle-content",
         trigEngine = angle_content_engine(),
@@ -175,11 +149,6 @@ function M.math_snippets()
       fmta([[\left\langle <> \right\rangle]], { cap(1) })
     ),
 
-    s(with_condition({ trig = [[\\]], name = "line break", wordTrig = false }, condition), t([[\\ ]])),
-    s(
-      with_condition({ trig = [[\.]], name = "paragraph line break", wordTrig = false }, condition),
-      t({ [[\\]], "", "" })
-    ),
     literal("dis", [[\displaystyle ]], "display style", condition),
     literal("tes", [[\textstyle ]], "text style", condition),
     literal("lts", [[\limits]], "limits", condition, { wordTrig = false }),
@@ -211,42 +180,6 @@ function M.math_snippets()
       end),
     }),
 
-    s(
-      with_condition({
-        trig = "symbolic-matrix",
-        trigEngine = symbolic_matrix_engine("plain"),
-        wordTrig = false,
-        name = "symbolic matrix",
-      }, condition),
-      { symbolic_matrix_node("plain") }
-    ),
-    s(
-      with_condition({
-        trig = "diagonal-matrix",
-        trigEngine = symbolic_matrix_engine("diag"),
-        wordTrig = false,
-        name = "diagonal symbolic matrix",
-      }, condition),
-      { symbolic_matrix_node("diag") }
-    ),
-    s(
-      with_condition({
-        trig = "upper-triangular-matrix",
-        trigEngine = symbolic_matrix_engine("upper"),
-        wordTrig = false,
-        name = "upper triangular symbolic matrix",
-      }, condition),
-      { symbolic_matrix_node("upper") }
-    ),
-    s(
-      with_condition({
-        trig = "lower-triangular-matrix",
-        trigEngine = symbolic_matrix_engine("lower"),
-        wordTrig = false,
-        name = "lower triangular symbolic matrix",
-      }, condition),
-      { symbolic_matrix_node("lower") }
-    ),
     s(
       with_condition(
         { trig = "([\\%w]+)mt", trigEngine = "pattern", wordTrig = false, name = "matrix symbol" },

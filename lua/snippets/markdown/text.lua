@@ -12,7 +12,7 @@ for _, build in ipairs({
   markdown.snippets,
   markdown.short_math_snippets,
   markdown.reference_snippets,
-  markdown.vault_snippets,
+  markdown.obsidian_snippets,
   markdown.blog_snippets,
 }) do
   vim.list_extend(snippets, build())
