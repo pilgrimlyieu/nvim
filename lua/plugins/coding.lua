@@ -71,4 +71,8 @@ return {
       return opts
     end,
   },
+  {
+    "willothy/flatten.nvim",
+    opts = {},
+  },
 }
