@@ -16,4 +16,19 @@ return {
       require("config.jj").setup()
     end,
   },
+  {
+    "julienvincent/hunk.nvim",
+    cmd = { "DiffEditor" },
+    opts = {
+      ui = {
+        tree = {
+          use_float = true,
+          float = {
+            border = "rounded",
+            padding = { left = 0, right = 0, top = 0, bottom = 0 },
+          },
+        },
+      },
+    },
+  },
 }

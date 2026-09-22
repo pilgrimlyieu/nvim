@@ -50,7 +50,7 @@ return {
         { pattern = "^jj new", icon = " ", color = "green" },
         { pattern = "^jj edit", icon = " ", color = "yellow" },
         { pattern = "^jj rebase", icon = "󰁨 ", color = "purple" },
-        { pattern = "^jj squash", icon = "󰆐 ", color = "orange" },
+        { pattern = "^jj squash", icon = "󰁄 ", color = "orange" },
         { pattern = "^jj undo", icon = " ", color = "yellow" },
         { pattern = "^jj redo", icon = " ", color = "yellow" },
         { pattern = "^jj abandon", icon = " ", color = "red" },

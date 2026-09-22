@@ -24,6 +24,10 @@ opt.tabstop = 4
 opt.list = true
 opt.listchars = { tab = ">!", trail = "·", nbsp = "␣" }
 
+-- LazyVim's `fillchars.diff = "╱"` is drawn in the normal foreground over the
+-- DiffDelete background. Keep fillers blank; they carry no information.
+opt.fillchars:append({ diff = " " })
+
 if vim.fn.has("win32") == 1 then
   opt.shell = vim.fn.executable("pwsh") == 1 and "pwsh" or "powershell"
   opt.shellcmdflag =

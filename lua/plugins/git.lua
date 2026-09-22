@@ -1,3 +1,8 @@
+local diffview_close = {
+  { "n", "q", "<cmd>DiffviewClose<cr>", { desc = "Close Diffview" } },
+  { "n", "Q", "<cmd>q<cr>", { desc = "Close Diffview Successfully" } },
+  { "n", "gq", "<cmd>cq<cr>", { desc = "Close Diffview with Error" } },
+}
 
 return {
   {
@@ -12,5 +17,31 @@ return {
         return tool ~= "gitui"
       end, opts.ensure_installed or {})
     end,
+  },
+  {
+    "dlyongemallo/diffview-plus.nvim",
+    cmd = {
+      "DiffviewOpen",
+      "DiffviewDiffFiles",
+      "DiffviewMergeFiles",
+      "DiffviewFileHistory",
+      "DiffviewToggle",
+      "DiffviewLog",
+    },
+    opts = {
+      enhanced_diff_hl = true,
+      view = {
+        winfixbuf = true,
+      },
+      keymaps = {
+        file_panel = diffview_close,
+        file_history_panel = diffview_close,
+        view = diffview_close,
+      },
+    },
+    keys = {
+      { "<leader>gd", "<cmd>DiffviewToggle<cr>", desc = "Diffview Toggle" },
+      { "<leader>gh", "<cmd>DiffviewFileHistory<cr>", desc = "Diffview File History" },
+    },
   },
 }

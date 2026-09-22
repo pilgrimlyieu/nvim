@@ -213,7 +213,6 @@ function M.install_keymaps()
   map("n", "<leader>gb", M.annotate("line"), "JJ Annotate Line")
   map({ "n", "x" }, "<leader>gB", M.browse, "JJ Browse")
 
-  map("n", "<leader>j?", M.which_key_help, "JJ Key Help")
   map("n", "<leader>jd", M.cmd("describe"), "JJ Describe")
   map("n", "<leader>jhd", M.diff("open_vdiff"), "JJ Diff This")
   map("n", "<leader>jhD", M.diff("open_hdiff"), "JJ Diff This Horizontal")
