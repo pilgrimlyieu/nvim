@@ -62,7 +62,6 @@ return {
       }
 
       remove_group(opts.spec, "<leader>g")
-      remove_group(opts.spec, "<leader>gh")
       remove_group(opts.spec, "gs")
 
       for index = #jj_icon_rules, 1, -1 do
@@ -76,7 +75,6 @@ return {
             return require("config.vcs").is_jj({ buf = 0 }) and "jj" or "git"
           end,
         },
-        { "<leader>gh", group = "hunks" },
         { "<leader>j", group = "jj" },
         { "<leader>jh", group = "jj diff" },
         { "<leader>jb", group = "jj bookmark" },
