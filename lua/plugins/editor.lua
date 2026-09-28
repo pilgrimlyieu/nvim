@@ -133,4 +133,24 @@ return {
       }
     end,
   },
+  {
+    "folke/snacks.nvim",
+    keys = {
+      { "<leader>gS", false }, -- used by octo.nvim
+      {
+        "<leader>.",
+        function()
+          Snacks.scratch({ ft = "markdown" })
+        end,
+        desc = "Toggle Markdown Scratch",
+      },
+      {
+        "<leader><C-.>",
+        function()
+          Snacks.scratch()
+        end,
+        desc = "Toggle Scratch Buffer",
+      },
+    },
+  },
 }
