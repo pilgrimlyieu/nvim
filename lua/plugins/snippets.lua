@@ -249,8 +249,11 @@ end
 ---Reload group switches and project snippets in the current session.
 local function reload_snippets()
   local luasnip = require("luasnip")
-
   luasnip.cleanup()
+  local spacing = package.loaded["config.snippets.core.spacing"]
+  if spacing then
+    spacing.cleanup()
+  end
   for name in pairs(package.loaded) do
     if name:match("^config%.snippets%.") then
       package.loaded[name] = nil

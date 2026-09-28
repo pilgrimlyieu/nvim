@@ -1,11 +1,7 @@
----Typst text-mode snippets.
-local enabled = require("config.snippets.groups")
+local loading = require("config.snippets.core.loading")
 
-if not enabled("typst_text") then
-  return {}, {}
-end
+local collect = loading.collect
 
-local typst = require("config.snippets.typst")
-local util = require("config.snippets.util")
-
-return util.qualify("Typst", typst.text_snippets(), typst.text_autosnippets())
+return collect("Typst", {
+  "typst.text",
+})

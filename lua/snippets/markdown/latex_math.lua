@@ -1,2 +1,3 @@
----Markdown LaTeX math snippets (`$…$` and `$$…$$` scopes from Tree-sitter).
-return require("config.snippets.latex_math").load({ markdown_reference = true })
+local latex_math = require("config.snippets.latex.math")
+
+return latex_math.build()

@@ -1,2 +1,3 @@
----LaTeX math snippets for `.tex` buffers (scopes from VimTeX).
-return require("config.snippets.latex_math").load()
+local latex_math = require("config.snippets.latex.math")
+
+return latex_math.build()

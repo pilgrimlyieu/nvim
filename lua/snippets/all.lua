@@ -1,30 +1,19 @@
----Snippets available in every filetype.
-
+---Date snippets available in every filetype.
 local ls = require("luasnip")
-local util = require("config.snippets.util")
+
+local loading = require("config.snippets.core.loading")
+local nodes = require("config.snippets.core.nodes")
 
 local s = ls.snippet
-local f = ls.function_node
 
----Return today's date for all-filetype date snippets.
-local function today()
-  return tostring(os.date("%Y-%m-%d"))
-end
-
----Return the current local date and minute.
-local function now_minute()
-  return tostring(os.date("%Y-%m-%d %H:%M"))
-end
+local date = nodes.date
+local qualify = loading.qualify
 
 local snippets = {
-  s({ trig = "dt", name = "date" }, {
-    f(today),
-  }),
-  s({ trig = "dtt", name = "date and time" }, {
-    f(now_minute),
-  }),
+  s({ trig = "dt", name = "date" }, date("%Y-%m-%d")),
+  s({ trig = "dtt", name = "date and time" }, date("%Y-%m-%d %H:%M")),
 }
 
 local autosnippets = {}
 
-return util.qualify("Global", snippets, autosnippets)
+return qualify("Global", snippets, autosnippets)

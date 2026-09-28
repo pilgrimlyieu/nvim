@@ -1,15 +1,17 @@
----Typst math snippets.
----
----Use Typst-native math calls (`frac`, `mat`, `cases`, `product`, etc.) instead
----of LaTeX commands.  The context is guarded by Tree-sitter only; there is no
----buffer-text delimiter fallback for Typst scope.
-local enabled = require("config.snippets.groups")
+local loading = require("config.snippets.core.loading")
+
+local collect = loading.collect
+local enabled = loading.enabled
 
 if not enabled("typst_math") then
   return {}, {}
 end
 
-local typst = require("config.snippets.typst")
-local util = require("config.snippets.util")
-
-return util.qualify("Typst", typst.math_snippets(), typst.math_autosnippets())
+return collect("Typst", {
+  "typst.math.operators",
+  "typst.math.matrices",
+  "typst.math.wrappers",
+  "typst.math.scripts",
+  "typst.math.fractions",
+  "typst.math.symbols",
+})

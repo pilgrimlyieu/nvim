@@ -1,13 +1,15 @@
 ---LeetCode 练习
-
 local ls = require("luasnip")
-local util = require("config.snippets.util")
+
+local loading = require("config.snippets.core.loading")
 
 local s = ls.snippet
-local i = ls.insert_node
-local t = ls.text_node
-local c = ls.choice_node
 local sn = ls.snippet_node
+local t = ls.text_node
+local i = ls.insert_node
+local c = ls.choice_node
+
+local qualify = loading.qualify
 
 local snippets = {
   s({ trig = "cd", name = "study card" }, {
@@ -19,7 +21,6 @@ local snippets = {
       t("ref"),
     }),
     t({ "", "// " }),
-    i(0),
   }),
   s({ trig = "alt", name = "alternative solution" }, {
     t("// @alt "),
@@ -37,4 +38,4 @@ local snippets = {
 
 local autosnippets = {}
 
-return util.qualify("C++", snippets, autosnippets)
+return qualify("C++", snippets, autosnippets)
