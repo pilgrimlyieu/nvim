@@ -3,16 +3,17 @@ local M = {}
 
 local ls = require("luasnip")
 
-local aliases = require("config.snippets.shared.aliases")
+local aliases = require("config.snippets.shared.rules.aliases")
 local conditions = require("config.snippets.core.conditions")
 local constructors = require("config.snippets.core.constructors")
-local symbols = require("config.snippets.shared.symbols")
+local symbols = require("config.snippets.shared.rules.greek")
+local symbol_snippets = require("config.snippets.shared.symbols")
 
 local s = ls.snippet
 local t = ls.text_node
 
 local literal_snippet = constructors.literal_snippet
-local symbol_autosnippets = symbols.symbol_autosnippets
+local symbol_autosnippets = symbol_snippets.symbol_autosnippets
 local with_condition = conditions.with_condition
 local word_autosnippet = constructors.word_autosnippet
 

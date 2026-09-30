@@ -4,20 +4,81 @@ local M = {}
 local ls = require("luasnip")
 
 local conditions = require("config.snippets.core.conditions")
-local matching = require("config.snippets.core.matching")
-local triggers = require("config.snippets.core.triggers")
+local syntax = require("config.snippets.latex.math.syntax")
 
 local s = ls.snippet
 local f = ls.function_node
 
-local choose_next = matching.choose_next
-local exact_cycle_engine = triggers.exact_cycle_engine
-local sorted_longest_first = matching.sorted_longest_first
 local with_condition = conditions.with_condition
+local read_operand = syntax.read
 
-local BRACED_COMMAND_WINDOW = 180 -- command cycles that preserve one/two brace groups.
+local BRACED_COMMAND_WINDOW = syntax.window -- same command/group knowledge as other math edits.
 local SLASH_CYCLE_WINDOW = 140 -- command-cycle value, optional suffix, then `/`.
 local CYCLE_SUFFIX_WINDOW = 120 -- exact spacing commands plus optional whitespace.
+
+---Return the next value in a fixed cycle.
+---@param current string
+---@param values string[]
+---@return string
+local function choose_next(current, values)
+  for index, value in ipairs(values) do
+    if value == current then
+      return values[index % #values + 1]
+    end
+  end
+  return values[1]
+end
+
+---Return a copy ordered by descending byte length for longest-match scans.
+---@param values string[]
+---@return string[]
+local function sorted_longest_first(values)
+  local ordered = {}
+  for index, value in ipairs(values) do
+    ordered[index] = value
+  end
+
+  table.sort(ordered, function(left, right)
+    return #left > #right
+  end)
+  return ordered
+end
+
+---A suffix beginning at an escaped backslash is not a TeX command token.
+---Inspect at most one operand window; a longer slash run remains untouched.
+---@param line string The entire line to the cursor.
+---@param matched string The matched suffix to check.
+---@return boolean
+local function command_start(line, matched)
+  if matched:sub(1, 1) ~= "\\" then
+    return true
+  end
+  local pos, count = #line - #matched, 0
+  while pos > 0 and line:sub(pos, pos) == "\\" do
+    count, pos = count + 1, pos - 1
+    if count > syntax.window then
+      return false
+    end
+  end
+  return count % 2 == 0
+end
+
+---Match one of several exact suffixes.
+---@param values string[]
+---@return SnipTriggerEngine
+local function exact_cycle_engine(values)
+  local matches = sorted_longest_first(values)
+  return function()
+    return function(line_to_cursor)
+      for _, value in ipairs(matches) do
+        if line_to_cursor:sub(-#value) == value and command_start(line_to_cursor, value) then
+          return value, { value }
+        end
+      end
+      return nil
+    end
+  end
+end
 
 ---Match any value at the cursor and preserve trailing whitespace.
 ---@param values string[]
@@ -33,7 +94,7 @@ local function suffix_cycle_engine(values)
       local text = line_to_cursor:sub(math.max(1, #line_to_cursor - CYCLE_SUFFIX_WINDOW))
       for _, pattern in ipairs(specs) do
         local match, suffix = text:match(pattern)
-        if match then
+        if match and command_start(line_to_cursor, match .. suffix) then
           return match .. suffix, { match, suffix }
         end
       end
@@ -62,7 +123,7 @@ local function slash_cycle_engine(values, suffix_pattern)
       local text = line_to_cursor:sub(math.max(1, #line_to_cursor - SLASH_CYCLE_WINDOW))
       for _, pattern in ipairs(specs) do
         local match, matched_suffix = text:match(pattern)
-        if match then
+        if match and command_start(line_to_cursor, match .. matched_suffix .. "/") then
           return match .. matched_suffix .. "/", { match, matched_suffix or "" }
         end
       end
@@ -119,10 +180,9 @@ end
 ---@param brace_count integer
 ---@return LuaSnip.Snippet
 local function braced_command_cycle(name, commands, brace_count)
-  local patterns = {}
-  local arguments = string.rep("%b{}", brace_count)
-  for _, command in ipairs(sorted_longest_first(commands)) do
-    patterns[#patterns + 1] = { command = command, pattern = "(" .. vim.pesc(command) .. arguments .. ")$" }
+  local allowed = {}
+  for _, command in ipairs(commands) do
+    allowed[command] = true
   end
 
   return s(
@@ -130,18 +190,18 @@ local function braced_command_cycle(name, commands, brace_count)
       trig = name,
       trigEngine = function()
         return function(line_to_cursor)
-          if brace_count > 0 and not vim.endswith(line_to_cursor, "}") then
+          local text = line_to_cursor:sub(math.max(1, #line_to_cursor - BRACED_COMMAND_WINDOW))
+          local operand = read_operand(text)
+          if
+            not operand
+            or not operand.base_command
+            or operand.base_arity ~= brace_count
+            or not allowed[operand.base_command]
+            or not command_start(line_to_cursor, operand.source)
+          then
             return nil
           end
-
-          local text = line_to_cursor:sub(math.max(1, #line_to_cursor - BRACED_COMMAND_WINDOW))
-          for _, spec in ipairs(patterns) do
-            local target = text:match(spec.pattern)
-            if target then
-              return target, { target, spec.command }
-            end
-          end
-          return nil
+          return operand.source, { operand.source, operand.base_command, operand.base }
         end
       end,
       wordTrig = false,
@@ -149,9 +209,14 @@ local function braced_command_cycle(name, commands, brace_count)
     }, conditions.math),
     {
       f(function(_, snip)
-        local target = snip.captures[1] or ""
+        local source = snip.captures[1] or ""
         local command = snip.captures[2]
-        return command and choose_next(command, commands) .. target:sub(#command + 1) or target
+        local base = snip.captures[3] or ""
+        if not command then
+          return source
+        end
+        local suffix = source:sub(#base + 1)
+        return choose_next(command, commands) .. base:sub(#command + 1) .. suffix
       end),
     }
   )

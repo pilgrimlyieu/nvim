@@ -1,16 +1,18 @@
 ---Typst-native feature definitions.
 local M = {}
 
+local aliases = require("config.snippets.shared.rules.aliases")
 local conditions = require("config.snippets.core.conditions")
 local constructors = require("config.snippets.core.constructors")
-local symbols = require("config.snippets.shared.symbols")
+local symbols = require("config.snippets.shared.rules.greek")
+local symbol_snippets = require("config.snippets.shared.symbols")
 
 local literal_autosnippet = constructors.literal_autosnippet
-local symbol_autosnippets = symbols.symbol_autosnippets
+local symbol_autosnippets = symbol_snippets.symbol_autosnippets
 
 function M.autosnippets()
   local condition = conditions.math
-  local autos = symbol_autosnippets(require("config.snippets.shared.aliases"), "typst", condition)
+  local autos = symbol_autosnippets(aliases, "typst", condition)
 
   -- TODO: remove these self-expanding/conflict aliases since Typst has native support for them.
   -- Comparison (<= >= !=), logic (forall, and, or, not), membership and

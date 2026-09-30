@@ -34,6 +34,7 @@
 ---@field trig? string
 ---@field name? string
 ---@field dscr? string|string[]
+---@field docTrig? string Example input used by LuaSnip to generate a meaningful preview.
 ---@field trigEngine? string|SnipTriggerEngine
 ---@field wordTrig? boolean
 ---@field snippetType? "snippet"|"autosnippet"

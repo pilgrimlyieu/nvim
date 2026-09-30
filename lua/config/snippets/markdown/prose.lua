@@ -74,13 +74,25 @@ function M.snippets()
       visual_insert(2),
       t({ "", "", "</details>", "<!-- }}} -->" }),
     }),
-    s(with_condition({ trig = "ii", name = "italic" }, condition), fmt("*{}*", { visual_insert(1) })),
-    s(with_condition({ trig = "bb", name = "bold" }, condition), fmt("**{}**", { visual_insert(1) })),
-    s(with_condition({ trig = "bi", name = "bold italic" }, condition), fmt("***{}***", { visual_insert(1) })),
-    s(with_condition({ trig = "mm", name = "mark" }, condition), fmt("=={}==", { visual_insert(1) })),
-    s(with_condition({ trig = "==", name = "mark (==)" }, condition), fmt("=={}==", { visual_insert(1) })),
-    s(with_condition({ trig = "ss", name = "strike" }, condition), fmt("~~{}~~", { visual_insert(1) })),
-    s(with_condition({ trig = "uu", name = "underline" }, condition), fmt("<u>{}</u>", { visual_insert(1) })),
+    s(with_condition({ trig = "ii", name = "italic", wordTrig = false }, condition), fmt("*{}*", { visual_insert(1) })),
+    s(with_condition({ trig = "bb", name = "bold", wordTrig = false }, condition), fmt("**{}**", { visual_insert(1) })),
+    s(
+      with_condition({ trig = "bi", name = "bold italic", wordTrig = false }, condition),
+      fmt("***{}***", { visual_insert(1) })
+    ),
+    s(with_condition({ trig = "mm", name = "mark", wordTrig = false }, condition), fmt("=={}==", { visual_insert(1) })),
+    s(
+      with_condition({ trig = "==", name = "mark (==)", wordTrig = false }, condition),
+      fmt("=={}==", { visual_insert(1) })
+    ),
+    s(
+      with_condition({ trig = "ss", name = "strike", wordTrig = false }, condition),
+      fmt("~~{}~~", { visual_insert(1) })
+    ),
+    s(
+      with_condition({ trig = "uu", name = "underline", wordTrig = false }, condition),
+      fmt("<u>{}</u>", { visual_insert(1) })
+    ),
     s(with_condition({ trig = "/.", name = "comment" }, condition), fmt("<!-- {} -->", { visual_insert(1) })),
     s(with_condition({ trig = "#([1-6])", name = "heading", trigEngine = "pattern" }, with_line_begin(condition)), {
       f(function(_, snip)

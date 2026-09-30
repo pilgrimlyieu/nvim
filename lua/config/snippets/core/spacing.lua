@@ -176,7 +176,9 @@ function M.snippet(context, body, config)
       [events.pre_expand] = function(_, event)
         local row, col = unpack(event.expand_pos)
         local before = vim.api.nvim_buf_get_text(0, row, math.max(0, col - 4), row, col, {})[1]
-        return { env_override = { SNIP_SPACE_BEFORE = is_prose(last_char(before)) and " " or "" } }
+        local char = last_char(before)
+        local needs_space = is_prose(char) or char:match("^[,.;:!?%)%]%}]$") ~= nil
+        return { env_override = { SNIP_SPACE_BEFORE = needs_space and " " or "" } }
       end,
     }
   end

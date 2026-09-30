@@ -24,6 +24,8 @@ local with_line_begin = conditions.with_line_begin
 function M.snippets()
   local condition = conditions.text
   local snippets = {
+    s(with_condition({ trig = "ii", name = "italic", wordTrig = false }, condition), fmt("_{}_", { visual_insert(1) })),
+    s(with_condition({ trig = "bb", name = "bold", wordTrig = false }, condition), fmt("*{}*", { visual_insert(1) })),
     s(
       with_condition({ trig = "fig", name = "figure" }, condition),
       fmt(

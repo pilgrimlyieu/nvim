@@ -1,53 +1,40 @@
 ---Typst-native feature definitions.
+---TODO: make latex/math/wrappers.lua shared, and make here rules-based.
 local M = {}
 
 local ls = require("luasnip")
-local fmt = require("luasnip.extras.fmt").fmt
+local fmta = require("luasnip.extras.fmt").fmta
 
 local conditions = require("config.snippets.core.conditions")
 local nodes = require("config.snippets.core.nodes")
-local operand = require("config.snippets.shared.operand")
-local symbols = require("config.snippets.shared.symbols")
+local syntax = require("config.snippets.typst.math.syntax")
+local postfix = require("config.snippets.shared.math_postfix")
 
 local s = ls.snippet
 local t = ls.text_node
 local i = ls.insert_node
-local f = ls.function_node
 
-local operand_engine = operand.engine
+local operand_engine = postfix.engine
+local capture = nodes.capture
 local text_choices = nodes.text_choices
-local undelimit = operand.undelimit
-local ungroup = operand.ungroup
 local visual_insert = nodes.visual_insert
 local with_condition = conditions.with_condition
+local whole_operand_engine = postfix.whole(syntax)
 
----Build one manual postfix wrapper for a complete Typst operand.
----@param trigger string
----@param command string
----@param name string
----@return LuaSnip.Snippet
-local function postfix(trigger, command, name)
-  return s(
-    with_condition(
-      { trig = trigger, name = name .. " postfix", trigEngine = operand_engine, wordTrig = false, priority = 1100 },
-      conditions.math
+local function wrapper_pair(trigger, template, name)
+  return {
+    s(with_condition({ trig = trigger, name = name }, conditions.math), fmta(template, { visual_insert(1) })),
+    s(
+      with_condition({
+        trig = trigger,
+        name = name .. " postfix",
+        trigEngine = whole_operand_engine,
+        wordTrig = false,
+        priority = 1100,
+      }, conditions.math),
+      fmta(template, { capture(1) })
     ),
-    fmt(command .. "({})", {
-      f(function(_, snip)
-        return ungroup(snip.captures[1])
-      end),
-    })
-  )
-end
-
-local function style_snippet(trigger, command, name, postfix_name)
-  local snippets = {
-    s(with_condition({ trig = trigger, name = name }, conditions.math), fmt(command .. "({})", { visual_insert(1) })),
   }
-  if postfix_name ~= false then
-    snippets[#snippets + 1] = postfix(trigger, command, postfix_name or name)
-  end
-  return snippets
 end
 
 function M.snippets()
@@ -55,45 +42,38 @@ function M.snippets()
   local snippets = {
     s(
       with_condition({ trig = "sqrt", name = "root" }, condition),
-      fmt("root({}, {})", { i(1, "3"), visual_insert(2) })
+      fmta("root(<>, <>)", { i(1, "3"), visual_insert(2) })
     ),
     s(
       with_condition({ trig = "root", name = "root (default n)" }, condition),
-      fmt("root({}, {})", { i(1, "n"), visual_insert(2) })
+      fmta("root(<>, <>)", { i(1, "n"), visual_insert(2) })
     ),
     s(
       with_condition({ trig = "LR", name = "left right delimiters" }, condition),
-      fmt("lr({}{}{})", { i(1, "("), visual_insert(2), i(3, ")") })
+      fmta("lr(<><><>)", { i(1, "("), visual_insert(2), i(3, ")") })
     ),
     s(
       with_condition({ trig = "op", name = "operator" }, condition),
-      fmt([[op("{}", limits: #{})]], { i(1, "lim"), text_choices(2, { "true", "false" }) })
+      fmta([[op("<>", limits: #<>)]], { i(1, "lim"), text_choices(2, { "true", "false" }) })
     ),
     s(
       with_condition({ trig = "over", name = "overbrace" }, condition),
-      fmt("overbrace({}, {})", { visual_insert(1), i(2) })
+      fmta("overbrace(<>, <>)", { visual_insert(1), i(2) })
     ),
     s(
       with_condition({ trig = "under", name = "underbrace" }, condition),
-      fmt("underbrace({}, {})", { visual_insert(1), i(2) })
+      fmta("underbrace(<>, <>)", { visual_insert(1), i(2) })
     ),
   }
 
   -- One rule owns the ordinary wrapper and its manual postfix counterpart.
   for _, def in ipairs({
-    -- TODO: Rename to av/bv and add LaTeX-style wrapping previous element autosnipptes.
-    { "avec", command = "arrow", name = "arrow vector symbol", postfix = false },
-    { "bvec", command = "bold", name = "bold vector symbol", postfix = false },
-    { "abs", name = "absolute value", postfix = "abs" },
+    { "abs", name = "absolute value" },
     { "norm" },
     { "floor" },
     { "ceil" },
     { "round" },
-    { "hat" },
-    { "bar" },
-    { "dot" },
     { "cancel" },
-    { "arrow" },
     { "gen", command = "sqrt", name = "square root" },
     { "sin", name = "sine" },
     { "cos", name = "cosine" },
@@ -104,22 +84,20 @@ function M.snippets()
     { "min", name = "minimum" },
     { "max", name = "maximum" },
   }) do
-    vim.list_extend(snippets, style_snippet(def[1], def.command or def[1], def.name or def[1], def.postfix))
+    vim.list_extend(snippets, wrapper_pair(def[1], (def.command or def[1]) .. "(<>)", def.name or def[1]))
   end
   snippets[#snippets + 1] = s(
     with_condition(
-      { trig = "sqrt", name = "root postfix", trigEngine = operand_engine, wordTrig = false, priority = 1100 },
+      { trig = "sqrt", name = "root postfix", trigEngine = whole_operand_engine, wordTrig = false, priority = 1100 },
       condition
     ),
-    fmt("root({}, {})", { i(1, "3"), f(function(_, snip)
-      return ungroup(snip.captures[1])
-    end) })
+    fmta("root(<>, <>)", { i(1, "3"), capture(1) })
   )
   snippets[#snippets + 1] =
-    s(with_condition({ trig = "set", name = "set enumeration" }, condition), fmt("lr({{{}}})", { visual_insert(1) }))
+    s(with_condition({ trig = "set", name = "set enumeration" }, condition), fmta("lr({<>})", { visual_insert(1) }))
   snippets[#snippets + 1] = s(
     with_condition({ trig = "setb", name = "set builder" }, condition),
-    fmt("lr({{{} | {}}})", { visual_insert(1, "x"), i(2) })
+    fmta("lr({<> | <>})", { visual_insert(1, "x"), i(2) })
   )
 
   for _, def in ipairs({ { "paren", "(", ")" }, { "brack", "[", "]" }, { "brace", "{", "}" } }) do
@@ -128,24 +106,25 @@ function M.snippets()
     end
     snippets[#snippets + 1] = s(with_condition({ trig = def[1], name = def[1] .. " delimiters" }, condition), wrapped())
     snippets[#snippets + 1] = s(
-      with_condition(
-        { trig = def[1], name = def[1] .. " postfix", trigEngine = operand_engine, wordTrig = false, priority = 1100 },
-        condition
-      ),
+      with_condition({
+        trig = def[1],
+        name = def[1] .. " postfix",
+        trigEngine = operand_engine(syntax, function(operand)
+          if operand.delimiters then
+            return { operand.delimiters, operand.source:sub(#operand.base + 1) }
+          end
+          return { operand.source, "" }
+        end),
+        wordTrig = false,
+        priority = 1100,
+      }, condition),
       {
         t("lr(" .. def[2]),
-        f(function(_, snip)
-          return undelimit(snip.captures[1])
-        end),
+        capture(1),
         t(def[3] .. ")"),
+        capture(2),
       }
     )
-  end
-
-  for _, def in ipairs(symbols.math_styles) do
-    if def.typst then
-      vim.list_extend(snippets, style_snippet(def.trigger, def.typst, def.name))
-    end
   end
 
   return snippets

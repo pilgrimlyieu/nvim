@@ -398,7 +398,7 @@ end
 ---
 ---LuaSnip's own `enable_autosnippets` is off so that expansion never runs in
 ---special buffers or on whitespace.  Scope filtering happens inside each
----snippet's condition via `config.snippets.conditions`.
+---snippet's condition via `config.snippets.core.conditions`.
 local function setup_guarded_autosnippets()
   local group = vim.api.nvim_create_augroup("config_luasnip_autosnippets", { clear = true })
 

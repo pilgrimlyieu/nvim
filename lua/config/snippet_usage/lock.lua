@@ -1,5 +1,5 @@
--- One nonblocking kernel lock per save. Keep the sidecar inode across releases.
 local platform = jit and jit.os
+-- One nonblocking kernel lock per save. Keep the sidecar inode across releases.
 local M = { available = platform == "Linux" or platform == "Windows" }
 local uv = vim.uv
 local acquire_handle, close_handle

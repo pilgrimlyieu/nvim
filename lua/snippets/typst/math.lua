@@ -8,10 +8,11 @@ if not enabled("typst_math") then
 end
 
 return collect("Typst", {
-  "typst.math.operators",
-  "typst.math.matrices",
-  "typst.math.wrappers",
-  "typst.math.scripts",
+  "typst.math.decorations",
   "typst.math.fractions",
+  "typst.math.matrices",
+  "typst.math.operators",
+  "typst.math.scripts",
   "typst.math.symbols",
+  "typst.math.wrappers",
 })

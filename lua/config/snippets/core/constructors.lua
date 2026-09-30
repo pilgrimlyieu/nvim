@@ -12,7 +12,7 @@ local t = ls.text_node
 
 local unescaped_word_engine = triggers.unescaped_word_engine
 local with_condition = conditions.with_condition
-local extend = utils.extend
+local table_extend = utils.table_extend
 
 ---Build a literal text snippet.
 ---@param trigger string
@@ -22,7 +22,7 @@ local extend = utils.extend
 ---@param extra? SnipOptions
 ---@return LuaSnip.Snippet
 function M.literal_snippet(trigger, output, name, condition, extra)
-  return s(with_condition(extend({ trig = trigger, name = name }, extra), condition), t(output))
+  return s(with_condition(table_extend({ trig = trigger, name = name }, extra), condition), t(output))
 end
 
 ---Build a literal autosnippet.
@@ -33,7 +33,7 @@ end
 ---@param extra? SnipOptions
 ---@return LuaSnip.Snippet
 function M.literal_autosnippet(trigger, output, name, condition, extra)
-  return M.literal_snippet(trigger, output, name, condition, extend({ snippetType = "autosnippet" }, extra))
+  return M.literal_snippet(trigger, output, name, condition, table_extend({ snippetType = "autosnippet" }, extra))
 end
 
 ---Build an unescaped-word autosnippet from literal text or LuaSnip nodes.
@@ -49,7 +49,7 @@ function M.word_autosnippet(trigger, body, name, condition, extra)
   end
   return s(
     with_condition(
-      extend({
+      table_extend({
         trig = trigger,
         name = name,
         trigEngine = unescaped_word_engine,

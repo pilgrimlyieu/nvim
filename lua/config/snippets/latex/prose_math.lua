@@ -7,8 +7,8 @@ local fmta = require("luasnip.extras.fmt").fmta
 local conditions = require("config.snippets.core.conditions")
 local environments = require("config.snippets.latex.environments").rules
 local nodes = require("config.snippets.core.nodes")
-local symbols = require("config.snippets.shared.symbols")
-local text_math = require("config.snippets.shared.prose_math")
+local symbols = require("config.snippets.shared.rules.greek")
+local text_math = require("config.snippets.shared.prose")
 
 local s = ls.snippet
 local i = ls.insert_node

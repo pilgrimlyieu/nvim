@@ -1,44 +1,14 @@
+---Typst spelling and input trigger of the fraction operation.
 local M = {}
 
-local ls = require("luasnip")
-local fmt = require("luasnip.extras.fmt").fmt
-
 local conditions = require("config.snippets.core.conditions")
-local nodes = require("config.snippets.core.nodes")
-local operand = require("config.snippets.shared.operand")
+local syntax = require("config.snippets.typst.math.syntax")
+local math_snippets = require("config.snippets.shared.math_snippets")
 
-local s = ls.snippet
-local i = ls.insert_node
-local f = ls.function_node
-
-local operand_engine = operand.engine
-local ungroup = operand.ungroup
-local visual_insert = nodes.visual_insert
-local with_condition = conditions.with_condition
+local fraction_snippets = math_snippets.fractions
 
 function M.autosnippets()
-  local condition = conditions.math
-  return {
-    s(
-      with_condition({ trig = "/.", name = "fraction", wordTrig = false, snippetType = "autosnippet" }, condition),
-      fmt("frac({}, {})", { visual_insert(1), i(2) })
-    ),
-    s(
-      with_condition({
-        trig = "/",
-        name = "simple fraction",
-        trigEngine = operand_engine,
-        wordTrig = false,
-        snippetType = "autosnippet",
-      }, condition),
-      fmt("frac({}, {})", {
-        f(function(_, snip)
-          return ungroup(snip.captures[1])
-        end),
-        visual_insert(1),
-      })
-    ),
-  }
+  return fraction_snippets(syntax, "/.", "frac(<>, <>)", conditions.math)
 end
 
 return M

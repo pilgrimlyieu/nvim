@@ -14,6 +14,7 @@ function M.build()
     "latex.math.operators",
     "latex.math.environments",
     "latex.math.wrappers",
+    "latex.math.decorations",
     "latex.math.matrices",
     "latex.math.fractions",
     "latex.math.scripts",

@@ -1,4 +1,4 @@
----LaTeX scripts; ordinary and automatic entries share their feature.
+---Latex script entry, editing, and incremental typing policy.
 local M = {}
 
 local ls = require("luasnip")
@@ -6,66 +6,80 @@ local fmta = require("luasnip.extras.fmt").fmta
 
 local conditions = require("config.snippets.core.conditions")
 local nodes = require("config.snippets.core.nodes")
-local scripts = require("config.snippets.shared.scripts")
+local triggers = require("config.snippets.core.triggers")
+local syntax = require("config.snippets.latex.math.syntax")
+local math_snippets = require("config.snippets.shared.math_snippets")
+local rules = require("config.snippets.shared.rules.scripts")
 
 local s = ls.snippet
 
+local script_snippets = math_snippets.scripts
+local capture = nodes.capture
 local visual_insert = nodes.visual_insert
 local with_condition = conditions.with_condition
+local rewrite_engine = triggers.rewrite_engine
 
----@type SnipScriptSyntax
-local syntax = {
-  open = "{",
-  close = "}",
-  command_prefix = "\\",
-  render = function(content)
-    if content:match("^%w$") or content:match("^\\%a+$") then
-      return content
-    end
-    return "{" .. content .. "}"
-  end,
-}
+local function group(content)
+  if content:match("^%w$") or content:match("^\\%a+$") then
+    return content
+  end
+  return "{" .. content .. "}"
+end
+
+local function automatic(name, pattern, render, condition, boundary)
+  return s(
+    with_condition({
+      trig = pattern,
+      name = name,
+      trigEngine = rewrite_engine(pattern, render, boundary),
+      wordTrig = false,
+      snippetType = "autosnippet",
+    }, condition),
+    { capture(1) }
+  )
+end
+
+local function quick_scripts(condition)
+  local out = {}
+  for _, rule in ipairs(rules.quick) do
+    out[#out + 1] = automatic(rule.name, rule.pattern, function(captures)
+      return rule.marker .. captures[1]
+    end, condition)
+  end
+  return out
+end
 
 function M.snippets()
-  local snippets = {
-    scripts.wrap(syntax, ",", "subscript", "_", conditions.math),
-    scripts.wrap(syntax, "'", "superscript", "^", conditions.math),
-    scripts.edit(syntax, "sb", "edit subscript", "_", conditions.math),
-    scripts.edit(syntax, "sp", "edit superscript", "^", conditions.math),
-    s(
-      with_condition({ trig = "subst", name = "substack" }, conditions.math),
-      fmta([[_{\substack{<>}}]], { visual_insert(1) })
-    ),
-    s(
-      with_condition({ trig = "''", name = "derivative order", wordTrig = false }, conditions.math),
-      fmta([[^{(<>)}]], { visual_insert(1) })
-    ),
-  }
-  vim.list_extend(snippets, scripts.fixed(syntax, "latex", conditions.math, false))
-  return snippets
+  local out = script_snippets(syntax, "{", "}", function(rule)
+    return group(rule.value or rule.latex)
+  end)
+  out[#out + 1] = s(
+    with_condition({ trig = "subst", name = "substack" }, conditions.math),
+    fmta([[_{\substack{<>}}]], { visual_insert(1) })
+  )
+  return out
 end
 
 function M.autosnippets()
   local math = conditions.math
   local autos = {
-    scripts.auto(syntax, "automatic numeric subscript", "([%a])(%d)$", function(captures)
+    automatic("automatic numeric subscript", "([%a])(%d)$", function(captures)
       return captures[1] .. "_" .. captures[2]
-    end, conditions.pure_math),
-    scripts.auto(syntax, "numeric subscript", "_(%d+)$", function(captures)
-      return "_" .. syntax.render(captures[1])
+    end, conditions.pure_math, "[_^]"),
+    automatic("numeric subscript", "_(%d+)$", function(captures)
+      return "_" .. group(captures[1])
     end, math),
-    scripts.auto(syntax, "append numeric subscript", "_%{(%d+)%}(%d+)$", function(captures)
+    automatic("append numeric subscript", "_%{(%d+)%}(%d+)$", function(captures)
       return "_{" .. captures[1] .. captures[2] .. "}"
     end, math),
-    scripts.auto(syntax, "numeric superscript", "%^(%-?%d%d+)$", function(captures)
-      return "^" .. syntax.render(captures[1])
+    automatic("numeric superscript", "%^(%-?%d+)$", function(captures)
+      return "^" .. group(captures[1])
     end, math),
-    scripts.auto(syntax, "append numeric superscript", "%^%{(%-?%d+)%}(%d+)$", function(captures)
+    automatic("append numeric superscript", "%^%{(%-?%d+)%}(%d+)$", function(captures)
       return "^{" .. captures[1] .. captures[2] .. "}"
     end, math),
   }
-  vim.list_extend(autos, scripts.quick_scripts(syntax, math))
-  vim.list_extend(autos, scripts.fixed(syntax, "latex", math, true))
+  vim.list_extend(autos, quick_scripts(math))
   return autos
 end
 
