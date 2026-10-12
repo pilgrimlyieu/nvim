@@ -50,10 +50,8 @@ return {
     opts = {
       auto_close = false,
       theme = "light",
-      -- An independent server per buffer, so several files can keep live
-      -- browser previews open at the same time.
       server = {
-        per_buffer = true,
+        per_buffer = false,
         port = 18282,
         port_range = 32,
       },

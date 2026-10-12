@@ -1,29 +1,63 @@
 return {
+  { "rcarriga/nvim-dap-ui", enabled = false },
+  {
+    "igorlfs/nvim-dap-view",
+    version = "1.*",
+    lazy = true,
+    cmd = {
+      "DapViewOpen",
+      "DapViewClose",
+      "DapViewToggle",
+      "DapViewWatch",
+      "DapViewHover",
+      "DapViewJump",
+      "DapViewShow",
+      "DapViewNavigate",
+    },
+    keys = {
+      {
+        "<leader>du",
+        function()
+          require("dap-view").toggle(true)
+        end,
+        desc = "Dap View",
+      },
+      {
+        "<leader>de",
+        function()
+          require("dap-view").hover(nil, false)
+        end,
+        desc = "Eval",
+        mode = { "n", "x" },
+      },
+      {
+        "<leader>dE",
+        function()
+          require("dap-view").add_expr()
+        end,
+        desc = "Watch Expression",
+        mode = { "n", "x" },
+      },
+    },
+    opts = {
+      auto_toggle = true,
+      winbar = { default_section = "scopes" },
+      -- 继续使用 LazyVim 的 nvim-dap-virtual-text，避免重复显示变量值。
+      virtual_text = { enabled = false },
+    },
+  },
   {
     "mfussenegger/nvim-dap",
+    -- 在启动 adapter 前加载视图，确保终端接管及自动开关监听器已注册。
+    dependencies = { "igorlfs/nvim-dap-view" },
     opts = function(_, opts)
       local dap = require("dap")
       local keymap = vim.keymap
       local group = "dap_temp_keymaps"
 
-      local function leetcode_step_into()
-        local session = dap.session()
-        if not session or vim.tbl_get(session, "config", "type") ~= "leetcode_gdb" then
-          dap.step_into()
-          return
-        end
-        session:evaluate({ expression = "lc-step", context = "repl" }, function(err)
-          if err then
-            vim.schedule(function()
-              vim.notify(err.message or tostring(err), vim.log.levels.ERROR, { title = "dap" })
-            end)
-          end
-        end)
-      end
-
       local function set_dap_keymaps()
         keymap.set("n", "<Down>", dap.step_over, { desc = "DAP Step Over", silent = true })
-        keymap.set("n", "<Right>", leetcode_step_into, { desc = "DAP Step Into", silent = true })
+        keymap.set("n", "<Right>", dap.step_into, { desc = "DAP Step Into", silent = true })
         keymap.set("n", "<Left>", dap.step_out, { desc = "DAP Step Out", silent = true })
         keymap.set("n", "<Up>", dap.restart_frame, { desc = "DAP Restart Frame", silent = true })
       end
@@ -48,7 +82,7 @@ return {
         }
       end
 
-      -- dap-ui 面板设 winfixbuf，默认 uselast 跳转在步入未打开的源文件时会 E1513；
+      -- dap-view 的视图和终端窗口也设 winfixbuf，默认 uselast 跳转可能 E1513；
       -- 自定义跳转：优先已显示该 buffer 的窗口，否则找可换 buffer 的普通窗口
       dap.defaults.fallback.switchbuf = function(bufnr, line, column)
         local wins = vim.api.nvim_tabpage_list_wins(0)
