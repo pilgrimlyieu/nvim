@@ -7,6 +7,28 @@ return {
       return {}
     end,
     cmd = { "RenderMarkdown" },
+    init = function()
+      local groups = {
+        RenderMarkdownUnchecked = { fg = "#f78c6c", bold = true },
+        RenderMarkdownChecked = { fg = "#89ddff", bold = true },
+        RenderMarkdownCancelled = { fg = "#fb4934", bold = true },
+        RenderMarkdownProgress = { fg = "#fabd2f", bold = true },
+        RenderMarkdownImportant = { fg = "#fe8019", bold = true },
+        RenderMarkdownForwarded = { fg = "#83a598", bold = true },
+        RenderMarkdownQuestion = { fg = "#8ec07c", bold = true },
+        RenderMarkdownStar = { fg = "#d3869b", bold = true },
+      }
+      local function apply()
+        for name, hl in pairs(groups) do
+          vim.api.nvim_set_hl(0, name, hl)
+        end
+      end
+      apply()
+      vim.api.nvim_create_autocmd("ColorScheme", {
+        group = vim.api.nvim_create_augroup("render_markdown_checkbox_hl", { clear = true }),
+        callback = apply,
+      })
+    end,
     keys = {
       {
         "<leader>um",
@@ -24,6 +46,25 @@ return {
       debounce = 0,
       -- Converting each formula spawns an external process and blocks edits.
       latex = { enabled = false },
+      checkbox = {
+        enabled = true,
+        unchecked = { icon = "󰄱 ", highlight = "RenderMarkdownUnchecked" },
+        checked = { icon = "󰄵 ", highlight = "RenderMarkdownChecked" },
+        custom = {
+          todo = { raw = "[-]", rendered = "󰡖 ", highlight = "RenderMarkdownCancelled" },
+          progress = { raw = "[/]", rendered = "󰦖 ", highlight = "RenderMarkdownProgress" },
+          important = { raw = "[!]", rendered = "󰀪 ", highlight = "RenderMarkdownImportant" },
+          forward = { raw = "[>]", rendered = "󰁔 ", highlight = "RenderMarkdownForwarded" },
+          question = { raw = "[?]", rendered = "󰘥 ", highlight = "RenderMarkdownQuestion" },
+          star = { raw = "[*]", rendered = "󱞈 ", highlight = "RenderMarkdownStar" },
+        },
+      },
+      win_options = {
+        conceallevel = {
+          default = 0,
+          rendered = 3,
+        },
+      },
     },
   },
   -- Replaced by the fork below. It needs a lazy.nvim name of its own for this

@@ -10,7 +10,7 @@
 
 ((html_block) @injection.content
   (#set! injection.language "html")
-  ; (#set! injection.combined) ; <-- This is the only change from the base query.
+  (#set! injection.combined) ; <-- This is the only change from the base query.
   (#set! injection.include-children))
 
 ((minus_metadata) @injection.content

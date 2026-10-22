@@ -20,6 +20,7 @@ local opt = vim.opt
 opt.spelllang = "en_us,cjk"
 opt.wrap = true
 opt.shiftwidth = 4
+opt.scrolloffpad = 1
 opt.tabstop = 4
 opt.list = true
 opt.listchars = { tab = ">!", trail = "·", nbsp = "␣" }

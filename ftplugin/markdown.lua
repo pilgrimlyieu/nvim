@@ -5,7 +5,6 @@ local large_size_threshold = vim.g.markdown_large_size_threshold or (80 * 1024)
 local large_markdown = line_count > large_line_threshold or file_size > large_size_threshold
 
 vim.opt_local.spell = true
-vim.opt_local.conceallevel = 0
 vim.b.markdown_large_file = large_markdown
 
 if large_markdown then
