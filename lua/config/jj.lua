@@ -8,24 +8,9 @@
 
 local M = {}
 
----@alias ConfigJjMode string|string[]
----@alias ConfigJjCommandOpts
----| jj.cmd.log_opts
----| jj.cmd.new_opts
----| jj.cmd.diff_opts
----| jj.cmd.diff_history_opts
----| jj.cmd.bookmark
----| jj.cmd.push_opts
----| jj.cmd.open_pr_opts
----| jj.cmd.fetch_pr_opts
----| jj.cmd.split.opts
----| string
----| string[]
----| nil
----@alias ConfigJjOptsProvider ConfigJjCommandOpts|fun(): ConfigJjCommandOpts
+---@alias ConfigJjOptsProvider jj.cmd.opts|nil
 ---@alias ConfigJjDiffOpts jj.diff.current_opts|jj.diff.revision_opts|jj.diff.revisions_opts|jj.diff.diff_opts|nil
 
-local log_defaults_patched = false
 local floating_close_patched = false
 local augroup = vim.api.nvim_create_augroup("config_jj", { clear = true })
 
@@ -40,33 +25,12 @@ local lazyvim_git_keys = {
   "<leader>gY",
 }
 
----@return jj.cmd.log_opts
-function M.log_opts()
-  -- Empty raw flags force jj.nvim's builder to emit plain `jj log --no-pager`
-  -- instead of merging in its default `--limit 20`.
-  return { raw_flags = "" }
-end
-
----@return jj.cmd.log_opts
-function M.log_all_opts()
-  return { raw_flags = "-r 'all()'" }
-end
-
----@param opts ConfigJjOptsProvider
----@return ConfigJjCommandOpts
-local function resolve_opts(opts)
-  if type(opts) == "function" then
-    return opts()
-  end
-  return opts
-end
-
 ---@param method string
 ---@param opts? ConfigJjOptsProvider
 ---@return fun()
 function M.cmd(method, opts)
   return function()
-    require("jj.cmd")[method](resolve_opts(opts))
+    require("jj.cmd")[method](opts)
   end
 end
 
@@ -95,17 +59,14 @@ function M.annotate(method)
   end
 end
 
----@return nil
 function M.browse()
   return require("jj.browse").browse()
 end
 
----@return nil
 function M.which_key_help()
   require("which-key").show({ keys = "<leader>j", mode = "n" })
 end
 
----@return nil
 function M.buffer_key_help()
   local keys = vim.api.nvim_buf_get_keymap(0, "n")
   table.sort(keys, function(a, b)
@@ -190,7 +151,7 @@ local function delete_lazyvim_git_keymaps()
   end
 end
 
----@param mode ConfigJjMode
+---@param mode string|string[]
 ---@param lhs string
 ---@param rhs string|function
 ---@param desc string
@@ -205,25 +166,14 @@ function M.install_keymaps()
 
   delete_lazyvim_git_keymaps()
 
-  map("n", "<leader>gg", M.picker("status"), "JJ Status")
-  map("n", "<leader>gG", M.cmd("log", M.log_opts), "JJ Log")
-  map("n", "<leader>gl", M.cmd("log", M.log_opts), "JJ Log")
-  map("n", "<leader>gL", M.cmd("log", M.log_all_opts), "JJ Log All")
-  map("n", "<leader>gf", M.picker("file_history"), "JJ Current File History")
-  map("n", "<leader>gb", M.annotate("line"), "JJ Annotate Line")
-  map({ "n", "x" }, "<leader>gB", M.browse, "JJ Browse")
-
+  map("n", "<leader>gG", M.cmd("log"), "JJ Log")
+  map("n", "<leader>gl", M.cmd("log"), "JJ Log")
+  map("n", "<leader>gL", M.cmd("log", { revisions = "all()" }), "JJ Log All")
   map("n", "<leader>jd", M.cmd("describe"), "JJ Describe")
-  map("n", "<leader>jhd", M.diff("open_vdiff"), "JJ Diff This")
-  map("n", "<leader>jhD", M.diff("open_hdiff"), "JJ Diff This Horizontal")
-  map("n", "<leader>jhp", M.cmd("j", "diff"), "JJ Diff")
-  map("n", "<leader>jl", M.cmd("log", M.log_opts), "JJ Log")
-  map("n", "<leader>jL", M.cmd("log", M.log_all_opts), "JJ Log All")
+  map("n", "<leader>jl", M.cmd("log"), "JJ Log")
+  map("n", "<leader>jL", M.cmd("log", { revisions = "all()" }), "JJ Log All")
   map("n", "<leader>jn", M.cmd("new", { show_log = true }), "JJ New")
   map("n", "<leader>je", M.cmd("edit"), "JJ Edit")
-  map("n", "<leader>js", M.picker("status"), "JJ Status")
-  map("n", "<leader>jc", M.picker("conflict"), "JJ conflicts")
-  map("n", "<leader>jC", M.picker("conflict_sections"), "JJ conflict sections")
   map("n", "<leader>jr", M.cmd("rebase"), "JJ Rebase")
   map("n", "<leader>jS", M.cmd("squash"), "JJ Squash")
   map("n", "<leader>ju", M.cmd("undo"), "JJ Undo")
@@ -237,7 +187,20 @@ function M.install_keymaps()
   map("n", "<leader>jbt", M.cmd("bookmark_track"), "JJ Bookmark Track")
   map("n", "<leader>jbf", M.cmd("bookmark_forget"), "JJ Bookmark Forget")
   map("n", "<leader>jbd", M.cmd("bookmark_delete"), "JJ Bookmark Delete")
+
+  map("n", "<leader>jhd", M.diff("open_vdiff"), "JJ Diff This")
+  map("n", "<leader>jhD", M.diff("open_hdiff"), "JJ Diff This Horizontal")
+
+  map("n", "<leader>gg", M.picker("status"), "JJ Status")
+  map("n", "<leader>gf", M.picker("file_history"), "JJ Current File History")
+  map("n", "<leader>js", M.picker("status"), "JJ Status")
+  map("n", "<leader>jc", M.picker("conflict"), "JJ conflicts")
+  map("n", "<leader>jC", M.picker("conflict_sections"), "JJ conflict sections")
+
+  map("n", "<leader>gb", M.annotate("line"), "JJ Annotate Line")
   map("n", "<leader>ja", M.annotate("file"), "JJ Annotate File")
+
+  map({ "n", "x" }, "<leader>gB", M.browse, "JJ Browse")
 end
 
 function M.init()
@@ -269,142 +232,14 @@ function M.init()
   })
 end
 
----@return jj.Config
-function M.opts()
-  ---@type jj.Config
-  local opts = {
-    terminal = {
-      window = {
-        type = "floating",
-        floating_width = 0.95,
-        floating_height = 0.9,
-      },
-    },
-    cmd = {
-      keymaps = {
-        floating = {
-          close = { "q", "<Esc>" },
-        },
-        log = {
-          edit = "<CR>",
-          edit_immutable = "<S-CR>",
-          describe = "d",
-          diff = "D",
-          new = "n",
-          new_after = "<C-n>",
-          new_after_immutable = "<S-n>",
-          undo = "u",
-          redo = "U",
-          abandon = "A",
-          bookmark = "b",
-          rebase = "r",
-          rebase_mode = {
-            onto = { "<CR>", "o" },
-            after = "a",
-            before = "b",
-            onto_immutable = { "<S-CR>", "<S-o>" },
-            after_immutable = "<S-a>",
-            before_immutable = "<S-b>",
-            exit_mode = { "<Esc>", "<C-c>" },
-          },
-          squash = "s",
-          squash_mode = {
-            into = "<CR>",
-            into_immutable = "<S-CR>",
-            exit_mode = { "<Esc>", "<C-c>" },
-          },
-          quick_squash = "S",
-          fetch = "f",
-          push = "p",
-          push_all = "P",
-          open_pr = "o",
-          open_pr_list = "O",
-          split = "<C-s>",
-          summary = "K",
-          summary_tooltip = {
-            diff = "D",
-            edit = "<CR>",
-            edit_immutable = "<S-CR>",
-          },
-          tag_set = "t",
-          history = "H",
-          change_revset = "c",
-          select_next_revision = "]h",
-          select_prev_revision = "[h",
-        },
-        status = {
-          open_file = "<CR>",
-          restore_file = "X",
-        },
-        close = { "q", "<Esc>" },
-      },
-    },
-  }
-  return opts
-end
-
 local function disable_floating_hide_keymap()
   -- `hide = nil` inside M.opts() cannot disable jj.nvim's default because Lua
   -- omits nil table fields before jj.nvim deep-merges defaults. Clear the
   -- merged config after setup instead, while keeping M.opts() typed as jj.Config.
-  ---@type jj.cmd.floating.keymaps?
   local floating_keymaps = require("jj.cmd").config.keymaps.floating
   if floating_keymaps then
     floating_keymaps.hide = nil
   end
-end
-
----@param value unknown
----@return boolean
-local function is_empty_table(value)
-  return type(value) == "table" and next(value) == nil
-end
-
----@param opts jj.cmd.log_opts
----@return string
-local function build_log_raw_flags(opts)
-  local flags = {}
-
-  if opts.summary then
-    flags[#flags + 1] = "--summary"
-  end
-  if opts.reversed then
-    flags[#flags + 1] = "--reversed"
-  end
-  if opts.no_graph then
-    flags[#flags + 1] = "--no-graph"
-  end
-  if opts.revisions then
-    flags[#flags + 1] = "--revisions " .. vim.fn.shellescape(opts.revisions)
-  end
-
-  return table.concat(flags, " ")
-end
-
-function M.patch_log_defaults()
-  if log_defaults_patched then
-    return
-  end
-
-  local jj_cmd_module = require("jj.cmd")
-  local jj_log_module = require("jj.cmd.log")
-  local original_log = jj_log_module.log
-
-  -- jj.nvim defaults to `limit = 20`. Treat absent limits as "show the full
-  -- revset", while preserving callers that explicitly request a limit.
-  ---@param opts? jj.cmd.log_opts
-  local function log_without_default_limit(opts)
-    if opts == nil or is_empty_table(opts) then
-      opts = M.log_opts()
-    elseif opts.limit == nil and opts.raw_flags == nil then
-      opts = vim.tbl_extend("force", opts, { raw_flags = build_log_raw_flags(opts) })
-    end
-    return original_log(opts)
-  end
-
-  jj_log_module.log = log_without_default_limit
-  jj_cmd_module.log = log_without_default_limit
-  log_defaults_patched = true
 end
 
 ---@param buf integer?
@@ -569,7 +404,7 @@ local function clear_suspended_floating_buffers()
   suspended_floating_buffers = {}
 end
 
-function M.patch_floating_close()
+local function patch_floating_close()
   if floating_close_patched then
     return
   end
@@ -696,11 +531,11 @@ function M.patch_floating_close()
   floating_close_patched = true
 end
 
-function M.setup()
-  require("jj").setup(M.opts())
+---@param opts jj.Config
+function M.setup(opts)
+  require("jj").setup(opts)
   disable_floating_hide_keymap()
-  M.patch_log_defaults()
-  M.patch_floating_close()
+  patch_floating_close()
 end
 
 return M

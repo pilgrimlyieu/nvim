@@ -55,9 +55,6 @@ return {
             -- Match config/keymaps.lua: ; opens commands, ,/: repeat motions.
             keys = { "f", "F", "t", "T", [";"] = ",", [","] = ":" },
           },
-          search = {
-            enabled = true,
-          },
         },
         jump = {
           autojump = true,
