@@ -24,7 +24,7 @@ return {
   { trigger = "mt", name = "matrix symbol", latex = [[\bm]], opts = { prefix = false } },
   { trigger = "rm", name = "roman", latex = [[\mathrm]], typst = "upright" },
   { trigger = "bb", name = "blackboard", latex = [[\mathbb]], typst = "bb" },
-  { trigger = "bf", name = "bold", latex = [[\mathbf]], typst = "bold" },
+  { trigger = "bf", name = "bold", latex = [[\mathbf]], typst = "mathbf" }, -- #let mathbf(x) = math.upright(math.bold(x))
   { trigger = "cal", name = "calligraphic", latex = [[\mathcal]], typst = "cal" },
   { trigger = "it", name = "italic", latex = [[\mathit]], typst = "italic" },
   { trigger = "sf", name = "sans", latex = [[\mathsf]], typst = "sans" },

@@ -87,7 +87,7 @@ return {
   },
   {
     "julienvincent/hunk.nvim",
-    cmd = { "DiffEditor" },
+    cmd = { "HunkDiffView", "HunkDiffEditor" },
     opts = {
       ui = {
         tree = {

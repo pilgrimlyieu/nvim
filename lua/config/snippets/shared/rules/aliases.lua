@@ -6,9 +6,9 @@ return {
   { trigger = "!=", name = "ne", latex = "\\ne", opts = { wordTrig = false } },
   {
     trigger = "...",
-    name = "horizontal dots",
+    name = "dots",
     latex = "\\dots",
-    typst = "dots.h",
+    typst = "dots",
     opts = { wordTrig = false },
   },
   {
@@ -25,8 +25,33 @@ return {
     typst = "minus.plus",
     opts = { wordTrig = false },
   },
-  { trigger = "=>", name = "implies", latex = "\\implies", typst = "=>", opts = { wordTrig = false } },
-  { trigger = "==", name = "iff", latex = "\\iff", opts = { wordTrig = false } },
+  {
+    trigger = "=>",
+    name = "implies (arrow)",
+    latex = "\\implies",
+    typst = "=>",
+    opts = { wordTrig = false },
+  },
+  {
+    trigger = "impl",
+    name = "implies (word)",
+    latex = "\\implies",
+    typst = "implies", -- #let implies = math.class("relation", sym.arrow.r.double.long)
+    opts = { wordTrig = false },
+  },
+  {
+    trigger = "==",
+    name = "iff (equal)",
+    latex = "\\iff",
+    opts = { wordTrig = false },
+  },
+  {
+    trigger = "iff",
+    name = "iff (word)",
+    latex = "\\iff",
+    typst = "iff", -- #let iff = math.class("relation", sym.arrow.l.r.double.long)
+    opts = { wordTrig = false },
+  },
   {
     trigger = "->",
     name = "right arrow (to)",
