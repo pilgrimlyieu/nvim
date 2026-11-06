@@ -146,6 +146,22 @@ return {
   },
   {
     "folke/snacks.nvim",
+    ---@type snacks.Config
+    opts = {
+      picker = {
+        sources = {
+          explorer = {
+            ignored = true,
+          },
+          files = {
+            ignored = true,
+          },
+          grep = {
+            ignored = true,
+          },
+        },
+      },
+    },
     keys = {
       { "<leader>gS", false }, -- used by octo.nvim
       {
